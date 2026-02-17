@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>South View — Historic Cemetery Navigation & History</title>
+  <link rel="icon" href="cemelogo.png" type="image/png">
+  <link href="https://api.mapbox.com/mapbox-gl-js/v3.8.0/mapbox-gl.css" rel="stylesheet">
+  <script src="https://api.mapbox.com/mapbox-gl-js/v3.8.0/mapbox-gl.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { touch-action: pan-x pan-y; }
+    html, body { width: 100%; height: 100%; overflow: hidden; font-family: system-ui, -apple-system, sans-serif; }
+    #map {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      min-height: 400px;
+    }
+    .filter-bar {
+      position: absolute;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      padding: 12px 16px;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+      max-width: 96%;
+    }
+    .filter-bar input, .filter-bar select {
+      padding: 8px 12px;
+      font-size: 14px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+    }
+    .filter-bar input { min-width: 160px; }
+    .filter-bar select { min-width: 120px; }
+    .filter-bar label { font-size: 12px; color: #666; margin-right: 4px; }
+    .filter-row { display: flex; align-items: center; gap: 6px; }
+    .filter-bar .clear-btn {
+      padding: 6px 12px;
+      font-size: 13px;
+      background: #f0f0f0;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .filter-bar .clear-btn:hover { background: #e0e0e0; }
+    .era-clusters {
+      position: absolute;
+      top: 72px;
+      left: 16px;
+      z-index: 1;
+      padding: 10px 12px;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+      font-size: 12px;
+    }
+    .era-clusters-title { font-weight: 600; margin-bottom: 8px; color: #333; }
+    .era-cluster-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+    .era-btn {
+      padding: 6px 10px;
+      font-size: 11px;
+      background: #e8f0fe;
+      border: 1px solid #c2dbf7;
+      border-radius: 6px;
+      cursor: pointer;
+      color: #1a5f2a;
+    }
+    .era-btn:hover { background: #d2e3fc; }
+    .site-logo {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      z-index: 1;
+      height: 56px;
+      width: auto;
+    }
+    .legend {
+      position: absolute;
+      bottom: 24px;
+      left: 16px;
+      z-index: 1;
+      padding: 10px 14px;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+      font-size: 12px;
+    }
+    .legend-title { font-weight: 600; margin-bottom: 8px; color: #333; }
+    .legend-item { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+    .legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+    .map-overlay {
+      position: absolute;
+      bottom: 24px;
+      right: 16px;
+      z-index: 1;
+    }
+    .map-overlay button {
+      padding: 12px 24px;
+      font-size: 16px;
+      font-weight: 600;
+      background: #111;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+      transition: transform 0.1s, background 0.2s;
+    }
+    .map-overlay button:hover {
+      background: #333;
+      transform: translateY(-1px);
+    }
+    .map-overlay button:active { transform: translateY(0); }
+    .tour-controls {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .tour-controls button {
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      background: #1a5f2a;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .tour-controls button:hover { background: #2a7f3a; filter: brightness(1.1); }
+    #tour-nav { display: flex; align-items: center; gap: 8px; }
+    .tour-nav-hidden { display: none !important; }
+    .tour-callout {
+      position: absolute;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      max-width: 90%;
+      padding: 12px 16px;
+      background: #1a3d2e;
+      color: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+      font-size: 14px;
+      line-height: 1.4;
+    }
+    .tour-callout.hidden { display: none !important; }
+    .tour-callout-icon { font-size: 20px; font-weight: 700; color: #fbbf24; flex-shrink: 0; }
+    #tour-nav span { font-size: 14px; color: #333; min-width: 50px; text-align: center; }
+    #tour-exit { background: #6b7280 !important; font-size: 13px; padding: 8px 16px; }
+    #tour-exit:hover { background: #4b5563 !important; }
+    .era-callout {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 2;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      max-width: 85%;
+      padding: 16px 20px;
+      background: #1a3d2e;
+      color: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .era-callout.hidden { display: none !important; }
+    .mapboxgl-popup-content {
+      padding: 16px;
+      min-width: 220px;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+    .popup-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; color: #111; }
+    .popup-summary { font-size: 14px; line-height: 1.5; color: #444; margin-bottom: 12px; }
+    .popup-img {
+      width: 100%;
+      height: 100px;
+      object-fit: cover;
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+    .popup-img.placeholder {
+      background: #e8e8e8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <img src="cemelogo.png" alt="South View Historic Cemetery Navigation & History" class="site-logo">
+
+  <div class="filter-bar">
+    <div class="filter-row">
+      <label>Name</label>
+      <input type="text" id="search-name" placeholder="Search by name…">
+    </div>
+    <div class="filter-row">
+      <label>Occupation</label>
+      <select id="filter-occupation">
+        <option value="">All</option>
+        <option value="Clergy">Clergy</option>
+        <option value="Legal">Legal</option>
+        <option value="Arts & Music">Arts & Music</option>
+        <option value="Civic / Activist">Civic / Activist</option>
+      </select>
+    </div>
+    <div class="filter-row">
+      <label>Era range</label>
+      <select id="filter-era">
+        <option value="">All</option>
+        <option value="1875-1900">1875–1900</option>
+        <option value="1900-1925">1900–1925</option>
+        <option value="1925-1950">1925–1950</option>
+        <option value="1950-1975">1950–1975</option>
+        <option value="1975+">1975+</option>
+      </select>
+    </div>
+    <div class="filter-row">
+      <label>Veterans</label>
+      <select id="filter-veteran">
+        <option value="">All</option>
+        <option value="yes">Veterans only</option>
+      </select>
+    </div>
+    <button class="clear-btn" id="clear-filters">Clear</button>
+  </div>
+
+  <div class="era-clusters">
+    <div class="era-clusters-title">Explore by era</div>
+    <div class="era-cluster-btns">
+      <button class="era-btn" data-era="1875-1900">1875–1900</button>
+      <button class="era-btn" data-era="1900-1925">1900–1925</button>
+      <button class="era-btn" data-era="1925-1950">1925–1950</button>
+      <button class="era-btn" data-era="1950-1975">1950–1975</button>
+      <button class="era-btn" data-era="1975+">1975+</button>
+      <button class="era-btn" data-era="veterans">Veterans</button>
+    </div>
+  </div>
+
+  <div id="era-callout" class="era-callout hidden">
+    <span class="tour-callout-icon">!</span>
+    <span id="era-callout-text"></span>
+  </div>
+
+  <div class="legend">
+    <div class="legend-title">Occupation</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#2563eb"></span> Clergy</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#059669"></span> Legal</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#d97706"></span> Arts & Music</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#dc2626"></span> Civic / Activist</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#6366f1"></span> Military</div>
+  </div>
+
+  <div class="map-overlay">
+    <button id="randomize">Randomize</button>
+  </div>
+
+  <div id="tour-callout" class="tour-callout hidden">
+    <span class="tour-callout-icon">!</span>
+    <span id="tour-callout-text"></span>
+  </div>
+
+  <div class="tour-controls">
+    <button id="start-tour">Start Guided Tour</button>
+    <div id="tour-nav" class="tour-nav-hidden">
+      <button id="tour-prev">← Prev</button>
+      <span id="tour-step">1 / 4</span>
+      <button id="tour-next">Next →</button>
+      <button id="tour-exit">Exit</button>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script>
+    mapboxgl.accessToken = typeof MAPBOX_ACCESS_TOKEN !== 'undefined' ? MAPBOX_ACCESS_TOKEN : '';
+
+    // South View Cemetery, 1990 Jonesboro Rd SE, Atlanta, GA 30315
+    const SOUTH_VIEW_CENTER = [-84.37080, 33.70170];
+
+    const OCCUPATION_COLORS = {
+      Clergy: '#2563eb',
+      Legal: '#059669',
+      'Arts & Music': '#d97706',
+      'Civic / Activist': '#dc2626',
+      Military: '#6366f1'
+    };
+
+    const ERA_RANGES = ['1875-1900', '1900-1925', '1925-1950', '1950-1975', '1975+'];
+
+    const markersData = [
+      { coords: [-84.3698, 33.7022], name: 'Martin Luther King Sr.', occupation: 'Clergy', era: 'Civil Rights', eraRange: '1925-1950', veteran: false,
+        summary: 'Father of Dr. Martin Luther King Jr., pastor and community leader. He was a central figure in Atlanta\'s civil rights history and helped shape his son\'s commitment to justice.',
+        historyContext: 'Atlanta\'s Sweet Auburn district was the epicenter of Black business and civil rights in the mid-20th century.', img: null },
+      { coords: [-84.3712, 33.7011], name: 'Donald L. Hollowell', occupation: 'Legal', era: 'Civil Rights', eraRange: '1950-1975', veteran: true,
+        summary: 'Renowned civil rights attorney who represented Dr. King and desegregated the University of Georgia. His legal work helped dismantle Jim Crow in Georgia.',
+        historyContext: 'U.S. Army veteran. His courtroom victories paved the way for integration across the South.', img: null },
+      { coords: [-84.3705, 33.7028], name: 'Alberta Williams King', occupation: 'Arts & Music', era: 'Civil Rights', eraRange: '1925-1950', veteran: false,
+        summary: 'Mother of Dr. Martin Luther King Jr. and a choir director at Ebenezer Baptist Church. She was a pillar of the Atlanta community until her death in 1974.',
+        historyContext: 'Ebenezer Baptist became a national symbol of the Black church\'s role in the Civil Rights Movement.', img: null },
+      { coords: [-84.3700, 33.7015], name: 'Henry McNeal Turner', occupation: 'Clergy', era: '1800s', eraRange: '1875-1900', veteran: false,
+        summary: 'Bishop, politician, and one of the most influential African American leaders of the 19th century. He founded many AME churches and advocated for emigration to Africa.',
+        historyContext: 'Reconstruction-era Georgia legislator. First Black chaplain in the U.S. Army (Civil War).', img: null },
+      { coords: [-84.3720, 33.7018], name: 'John Wesley Dobbs', occupation: 'Civic / Activist', era: '1900s', eraRange: '1900-1925', veteran: false,
+        summary: 'Civic leader known as the "Mayor of Auburn Avenue." He fought for voting rights and helped register thousands of Black voters in Atlanta.',
+        historyContext: 'His voter registration drives helped shape Atlanta politics before the Civil Rights era.', img: null },
+      { coords: [-84.3695, 33.7012], name: 'William A. Scott II', occupation: 'Arts & Music', era: '1900s', eraRange: '1900-1925', veteran: false,
+        summary: 'Founder of the Atlanta Daily World, the first successful African American daily newspaper in the U.S.',
+        historyContext: 'Atlanta\'s Black press chronicled Jim Crow, the Depression, and the rise of civil rights.', img: null },
+      { coords: [-84.3715, 33.7025], name: 'Sgt. James W. Johnson', occupation: 'Military', era: '1900s', eraRange: '1900-1925', veteran: true,
+        summary: 'Limited records. Served in the U.S. Army. Buried at South View alongside fellow veterans.',
+        historyContext: 'Part of a generation of Black veterans who returned from WWI to a segregated America.', img: null },
+      { coords: [-84.3708, 33.7008], name: 'Unknown Veteran', occupation: 'Military', era: '1800s', eraRange: '1875-1900', veteran: true,
+        summary: 'Civil War veteran. Limited documentation. Marker indicates military service.',
+        historyContext: 'Many Black Union soldiers settled in Atlanta after the war. South View became a resting place for veterans and their families.', img: null },
+      { coords: [-84.3718, 33.7018], name: 'Lena Horne (family plot)', occupation: 'Arts & Music', era: 'Civil Rights', eraRange: '1950-1975', veteran: false,
+        summary: 'Family connection to the entertainment icon. South View holds many ties to Atlanta\'s cultural figures.',
+        historyContext: 'Atlanta\'s role in Black entertainment and the crossover into mainstream American culture.', img: null },
+      { coords: [-84.3692, 33.7020], name: 'Mary McLeod Bethune', occupation: 'Civic / Activist', era: 'Civil Rights', eraRange: '1925-1950', veteran: false,
+        summary: 'Educator and advisor to FDR. Advocated for Black women\'s rights and education.',
+        historyContext: 'Part of the Black Cabinet that influenced New Deal policy. Ties to Atlanta\'s HBCUs.', img: null },
+      { coords: [-84.3702, 33.7010], name: 'Pvt. Robert T. Lewis', occupation: 'Military', era: '1900s', eraRange: '1925-1950', veteran: true,
+        summary: 'WWII veteran. Limited info. Served overseas. Returned to Atlanta.',
+        historyContext: 'Black WWII veterans were central to the Double V campaign — victory abroad and at home.', img: null },
+      { coords: [-84.3710, 33.7022], name: 'Rev. C.L. Franklin', occupation: 'Clergy', era: 'Civil Rights', eraRange: '1950-1975', veteran: false,
+        summary: 'Baptist minister and father of Aretha Franklin. Preached across the South.',
+        historyContext: 'The Black church network connected Detroit, Atlanta, and the broader Civil Rights Movement.', img: null },
+      { coords: [-84.3690, 33.7015], name: 'Unidentified Burial', occupation: 'Civic / Activist', era: '1800s', eraRange: '1875-1900', veteran: false,
+        summary: 'Limited records. Stone dates to late 1800s. Community member of early South View.',
+        historyContext: 'South View was founded in 1886. Many early burials have minimal documentation — part of reclaiming their stories.', img: null },
+      { coords: [-84.3722, 33.7005], name: 'Veterans Row (group)', occupation: 'Military', era: '1900s', eraRange: '1900-1925', veteran: true,
+        summary: 'Several veterans from the Spanish-American War and WWI era. Clustered in this section.',
+        historyContext: 'Veteran groupings at South View reflect Atlanta\'s Black military history from Civil War through WWII.', img: null }
+    ];
+
+    const map = new mapboxgl.Map({
+      container: 'map',
+      style: 'mapbox://styles/mapbox/streets-v12',
+      center: SOUTH_VIEW_CENTER,
+      zoom: 16.5
+    });
+
+    map.on('error', (e) => {
+      console.error('Mapbox error:', e);
+      document.body.insertAdjacentHTML('afterbegin',
+        '<div style="position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#c00;color:#fff;padding:12px 24px;border-radius:8px;z-index:9999;font-size:14px;">Map failed to load. Check token & allow localhost at account.mapbox.com</div>');
+    });
+
+    const markers = [];
+    let currentRandomIndex = 0;
+    let popupInstance = null;
+    let filteredIndices = [];
+    let tourActive = false;
+    let tourStep = 0;
+
+    function createMarkerElement(color) {
+      const el = document.createElement('div');
+      el.style.cssText = `width:24px;height:24px;background:${color};border:2px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3);cursor:pointer;`;
+      return el;
+    }
+
+    function createPopupHTML(data) {
+      const imgBlock = data.img
+        ? `<img class="popup-img" src="${data.img}" alt="">`
+        : `<div class="popup-img placeholder">No image</div>`;
+      const occupationTag = `<span style="font-size:11px;color:#888;">${data.occupation} · ${data.eraRange || data.era}</span>`;
+      const historyBlock = data.historyContext
+        ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid #eee;font-size:12px;color:#666;font-style:italic">${data.historyContext}</div>`
+        : '';
+      return `
+        <div class="popup-content">
+          ${imgBlock}
+          <div class="popup-title">${data.name}</div>
+          <div style="margin-bottom:8px">${occupationTag}</div>
+          <div class="popup-summary">${data.summary}</div>
+          ${historyBlock}
+        </div>
+      `;
+    }
+
+    function openPopupAtIndex(i) {
+      if (popupInstance) popupInstance.remove();
+      const data = markersData[i];
+      popupInstance = new mapboxgl.Popup({ offset: 25, closeButton: true })
+        .setLngLat(data.coords)
+        .setHTML(createPopupHTML(data))
+        .addTo(map);
+      map.flyTo({ center: data.coords, zoom: 17, duration: 800 });
+    }
+
+    const ERA_HISTORY = {
+      '1875-1900': 'Reconstruction and the rise of Black institutions in Atlanta. South View was founded in 1886.',
+      '1900-1925': 'Jim Crow era. Atlanta\'s Black business and civic leadership grew on Auburn Avenue.',
+      '1925-1950': 'The Depression, WWII, and the early Civil Rights Movement. Atlanta became a hub.',
+      '1950-1975': 'Civil Rights peak. Atlanta\'s role in desegregation and Black political power.',
+      '1975+': 'Modern Atlanta. Continuing legacy of civil rights and Black leadership.',
+      'veterans': 'Veteran groupings: Civil War through WWII. Black soldiers who served and returned to a segregated America.'
+    };
+
+    function getFilteredIndices() {
+      const nameQuery = document.getElementById('search-name').value.trim().toLowerCase();
+      const occupationFilter = document.getElementById('filter-occupation').value;
+      const eraFilter = document.getElementById('filter-era').value;
+      const veteranFilter = document.getElementById('filter-veteran').value;
+
+      return markersData
+        .map((d, i) => ({ d, i }))
+        .filter(({ d }) => {
+          if (nameQuery && !d.name.toLowerCase().includes(nameQuery)) return false;
+          if (occupationFilter && d.occupation !== occupationFilter) return false;
+          if (eraFilter && d.eraRange !== eraFilter) return false;
+          if (veteranFilter === 'yes' && !d.veteran) return false;
+          return true;
+        })
+        .map(({ i }) => i);
+    }
+
+    function applyFilters() {
+      filteredIndices = getFilteredIndices();
+      markers.forEach((marker, i) => {
+        marker.getElement().style.display = filteredIndices.includes(i) ? 'block' : 'none';
+      });
+      if (tourActive) {
+        tourStep = Math.min(tourStep, Math.max(0, filteredIndices.length - 1));
+        updateTourPath();
+        if (filteredIndices.length > 0) {
+          openPopupAtIndex(filteredIndices[tourStep]);
+          showTourCallout(getTourCalloutText(tourStep));
+        }
+        document.getElementById('tour-prev').disabled = tourStep === 0;
+      }
+    }
+
+    function flyToFiltered() {
+      if (filteredIndices.length === 0) return;
+      const coords = filteredIndices.map(i => markersData[i].coords);
+      const lngs = coords.map(c => c[0]);
+      const lats = coords.map(c => c[1]);
+      const bounds = [[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]];
+      map.fitBounds(bounds, { padding: 60, maxZoom: 17 });
+    }
+
+    function showEraCluster(eraKey) {
+      const el = document.getElementById('era-callout');
+      const textEl = document.getElementById('era-callout-text');
+      document.getElementById('filter-era').value = eraKey === 'veterans' ? '' : eraKey;
+      document.getElementById('filter-veteran').value = eraKey === 'veterans' ? 'yes' : '';
+      applyFilters();
+      const count = filteredIndices.length;
+      const ctx = ERA_HISTORY[eraKey] || '';
+      textEl.textContent = count ? `${count} people in this cluster. ${ctx}` : `No markers in this era. ${ctx}`;
+      el.classList.remove('hidden');
+      flyToFiltered();
+      setTimeout(() => el.classList.add('hidden'), 4000);
+    }
+
+    function getTourPathCoords() {
+      return filteredIndices.map(i => markersData[i].coords);
+    }
+
+    function getProgressPathCoords() {
+      if (tourStep <= 0 || filteredIndices.length === 0) return [];
+      const coords = getTourPathCoords();
+      return coords.slice(0, tourStep + 1);
+    }
+
+    function getTourCalloutText(step) {
+      if (filteredIndices.length === 0) return '';
+      if (step === 0) {
+        const first = markersData[filteredIndices[0]];
+        return `Touring ${filteredIndices.length} ${filteredIndices.length === 1 ? 'person' : 'people'} — ${first.occupation}, ${first.eraRange || first.era}.`;
+      }
+      const data = markersData[filteredIndices[step]];
+      return data.historyContext || `${data.name} — ${data.occupation}`;
+    }
+
+    function updateTourPath() {
+      if (!map.getSource || !map.getSource('tour-path-full')) return;
+      const fullCoords = getTourPathCoords();
+      const progressCoords = getProgressPathCoords();
+
+      map.getSource('tour-path-full').setData({
+        type: 'Feature',
+        properties: {},
+        geometry: { type: 'LineString', coordinates: fullCoords }
+      });
+      map.getSource('tour-path-progress').setData({
+        type: 'Feature',
+        properties: {},
+        geometry: { type: 'LineString', coordinates: progressCoords }
+      });
+
+      const total = filteredIndices.length;
+      document.getElementById('tour-step').textContent = total > 0 ? `${tourStep + 1} / ${total}` : '0 / 0';
+    }
+
+    function showTourCallout(text) {
+      const el = document.getElementById('tour-callout');
+      document.getElementById('tour-callout-text').textContent = text;
+      el.classList.remove('hidden');
+    }
+
+    function hideTourCallout() {
+      document.getElementById('tour-callout').classList.add('hidden');
+    }
+
+    function goToTourStop(step) {
+      const total = filteredIndices.length;
+      if (total === 0) return;
+      tourStep = Math.max(0, Math.min(step, total - 1));
+      updateTourPath();
+      openPopupAtIndex(filteredIndices[tourStep]);
+      showTourCallout(getTourCalloutText(tourStep));
+      document.getElementById('tour-prev').disabled = tourStep === 0;
+    }
+
+    function exitTour() {
+      tourActive = false;
+      document.getElementById('start-tour').style.display = 'block';
+      document.getElementById('tour-nav').classList.add('tour-nav-hidden');
+      hideTourCallout();
+      map.setLayoutProperty('tour-path-full', 'visibility', 'none');
+      map.setLayoutProperty('tour-path-progress', 'visibility', 'none');
+      if (popupInstance) popupInstance.remove();
+    }
+
+    function startTour() {
+      if (filteredIndices.length === 0) return;
+      tourActive = true;
+      tourStep = 0;
+      document.getElementById('start-tour').style.display = 'none';
+      document.getElementById('tour-nav').classList.remove('tour-nav-hidden');
+      map.setLayoutProperty('tour-path-full', 'visibility', 'visible');
+      map.setLayoutProperty('tour-path-progress', 'visibility', 'visible');
+      goToTourStop(0);
+    }
+
+    map.on('load', () => {
+      map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+      map.resize();
+
+      const tourCoords = filteredIndices.length > 0 ? filteredIndices.map(i => markersData[i].coords) : [SOUTH_VIEW_CENTER];
+      map.addSource('tour-path-full', {
+        type: 'geojson',
+        data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: tourCoords } }
+      });
+      map.addSource('tour-path-progress', {
+        type: 'geojson',
+        data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [] } }
+      });
+      map.addLayer({
+        id: 'tour-path-full',
+        type: 'line',
+        source: 'tour-path-full',
+        layout: { 'line-join': 'round', 'line-cap': 'round', visibility: 'none' },
+        paint: { 'line-color': '#94a3b8', 'line-width': 4, 'line-dasharray': [2, 2], 'line-opacity': 0.7 }
+      });
+      map.addLayer({
+        id: 'tour-path-progress',
+        type: 'line',
+        source: 'tour-path-progress',
+        layout: { 'line-join': 'round', 'line-cap': 'round', visibility: 'none' },
+        paint: { 'line-color': '#1a5f2a', 'line-width': 5 }
+      });
+
+      markersData.forEach((data, i) => {
+        const color = OCCUPATION_COLORS[data.occupation] || '#666';
+        const marker = new mapboxgl.Marker({ element: createMarkerElement(color) })
+          .setLngLat(data.coords)
+          .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(createPopupHTML(data)))
+          .addTo(map);
+        markers.push(marker);
+      });
+
+      filteredIndices = markersData.map((_, i) => i);
+      applyFilters();
+
+      document.getElementById('search-name').addEventListener('input', applyFilters);
+      document.getElementById('filter-occupation').addEventListener('change', applyFilters);
+      document.getElementById('filter-era').addEventListener('change', applyFilters);
+      document.getElementById('filter-veteran').addEventListener('change', applyFilters);
+
+      document.getElementById('clear-filters').addEventListener('click', () => {
+        document.getElementById('search-name').value = '';
+        document.getElementById('filter-occupation').value = '';
+        document.getElementById('filter-era').value = '';
+        document.getElementById('filter-veteran').value = '';
+        applyFilters();
+      });
+
+      document.querySelectorAll('.era-btn').forEach(btn => {
+        btn.addEventListener('click', () => showEraCluster(btn.dataset.era));
+      });
+
+      document.getElementById('randomize').addEventListener('click', () => {
+        if (filteredIndices.length === 0) return;
+        currentRandomIndex = (currentRandomIndex + 1) % filteredIndices.length;
+        openPopupAtIndex(filteredIndices[currentRandomIndex]);
+      });
+
+      document.getElementById('start-tour').addEventListener('click', startTour);
+      document.getElementById('tour-next').addEventListener('click', () => {
+        const total = filteredIndices.length;
+        if (total === 0) return;
+        const next = (tourStep + 1) % total;
+        goToTourStop(next);
+      });
+      document.getElementById('tour-prev').addEventListener('click', () => goToTourStop(tourStep - 1));
+      document.getElementById('tour-exit').addEventListener('click', exitTour);
+    });
+  </script>
+</body>
+</html>
