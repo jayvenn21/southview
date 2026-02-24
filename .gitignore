@@ -1,1 +1,37 @@
+# Mapbox / API keys (copy config.example.js to config.js)
 config.js
+
+# Source data (burial records – do not commit)
+*.csv
+southview-daily-interment-all-time*.csv
+
+# Generated / derived data (contains PII: names, dates, locations)
+graves.json
+data/graves.json
+data/coordinates.json
+data/updates/*.csv
+data/updates/*.json
+
+# Env / secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*secrets*
+*credentials*
+
+# Python
+__pycache__/
+*.py[cod]
+.Python
+*.so
+.venv/
+venv/
+env/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
