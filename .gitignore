@@ -30,6 +30,7 @@ venv/
 env/
 
 # OS / editor
+Untitled
 .DS_Store
 Thumbs.db
 *.swp
