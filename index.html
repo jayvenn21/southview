@@ -244,6 +244,8 @@
     .mapboxgl-popup-content {
       padding: 18px;
       min-width: 240px;
+      max-height: 30vh;
+      overflow-y: auto;
       border-radius: 12px;
       box-shadow: 0 4px 24px rgba(0,0,0,0.12);
       border: 1px solid #e8e4df;
@@ -388,6 +390,34 @@
         '<div style="position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#c00;color:#fff;padding:12px 24px;border-radius:8px;z-index:9999;font-size:14px;">Map failed to load. Check token & allow localhost at account.mapbox.com</div>');
     });
 
+    const COORD_PRECISION = 1e5;
+    function roundCoordKey(lat, lng) {
+      return Math.round(lat * COORD_PRECISION) / COORD_PRECISION + ',' + Math.round(lng * COORD_PRECISION) / COORD_PRECISION;
+    }
+    function buildGravesGeojson(graveList) {
+      const withCoords = graveList.filter(g => g.lat != null && g.lng != null);
+      const byKey = {};
+      withCoords.forEach(g => {
+        const key = roundCoordKey(g.lat, g.lng);
+        if (!byKey[key]) byKey[key] = { lng: g.lng, lat: g.lat, ids: [] };
+        byKey[key].ids.push(g.id);
+      });
+      return {
+        type: 'FeatureCollection',
+        features: Object.values(byKey).map(({ lng, lat, ids }) => ({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [lng, lat] },
+          properties: { ids: JSON.stringify(ids), count: ids.length }
+        }))
+      };
+    }
+
+    function getCountAtLocation(grave) {
+      if (!grave || grave.lat == null || grave.lng == null) return 0;
+      const key = roundCoordKey(grave.lat, grave.lng);
+      return filteredGraves.filter(g => g.lat != null && g.lng != null && roundCoordKey(g.lat, g.lng) === key).length;
+    }
+
     let currentRandomIndex = 0;
     let popupInstance = null;
     let filteredGraves = [];
@@ -443,6 +473,7 @@
       if (ageStr) parts.push(ageStr);
       if (g.gender) parts.push(`Gender: ${escapeHtml(g.gender)}`);
       if (g.locationString) parts.push(`Section: ${escapeHtml(g.locationString)}`);
+      parts.push('Exact location: ' + (getCountAtLocation(g) >= 2 ? 'Unknown' : 'Known'));
       if (g.funeralHome) parts.push(`Funeral home: ${escapeHtml(g.funeralHome)}`);
       if (g.graveType) parts.push(`Grave type: ${escapeHtml(g.graveType)}`);
       const metaHtml = parts.length ? `<div class="popup-meta">${parts.join('<br>')}</div>` : '';
@@ -460,6 +491,20 @@
           ${metaHtml}
           ${tagsHtml}
           ${relatedHtml}
+        </div>
+      `;
+    }
+
+    function createPopupHTMLForMultiple(gravesAtLocation) {
+      const listHtml = gravesAtLocation.map(g => {
+        const name = (g.fullName || [g.firstName, g.middleName, g.lastName].filter(Boolean).join(' ')).trim();
+        return `<li><a href="#" data-id="${g.id}" class="popup-related-link">${escapeHtml(name)}</a></li>`;
+      }).join('');
+      return `
+        <div class="popup-content">
+          <div class="popup-title">Multiple burials at this section</div>
+          <div class="popup-meta">Exact location unknown.</div>
+          <div class="popup-related"><strong>Select a burial:</strong><ul>${listHtml}</ul></div>
         </div>
       `;
     }
@@ -565,6 +610,7 @@
         metaLines.push('<p><strong>Gender:</strong> ' + escapeHtml(gLabel ? gLabel.label : grave.gender) + '</p>');
       }
       if (grave.locationString) metaLines.push('<p><strong>Section:</strong> ' + escapeHtml(grave.locationString) + '</p>');
+      metaLines.push('<p><strong>Exact location:</strong> ' + (getCountAtLocation(grave) >= 2 ? 'Unknown' : 'Known') + '</p>');
       if (grave.funeralHome) metaLines.push('<p><strong>Funeral home:</strong> ' + escapeHtml(grave.funeralHome) + '</p>');
       document.getElementById('detail-name').textContent = name;
       document.getElementById('detail-meta').innerHTML = metaLines.length ? metaLines.join('') : '';
@@ -605,6 +651,14 @@
       }
     }
 
+    /** Extract short section label for filter: "Section T4 - Block ..." -> "T4" (letter and number between Section and the -). */
+    function getSectionLabel(locationString) {
+      const s = (locationString || '').trim();
+      if (!s) return null;
+      const match = s.match(/Section\s+([A-Za-z0-9]+)\s*-/);
+      return match ? match[1].trim() : null;
+    }
+
     function getFilteredGraves() {
       const nameQuery = document.getElementById('search-name').value.trim().toLowerCase();
       const gender = document.getElementById('filter-gender').value;
@@ -622,9 +676,12 @@
           if (!full.includes(nameQuery) && !first.includes(nameQuery) && !last.includes(nameQuery)) return false;
         }
         if (gender && normalizeGender(g.gender) !== gender) return false;
-        if (section && (g.locationString || '') !== section) return false;
-        if (funeral && (g.funeralHome || '') !== funeral) return false;
-        if (graveType && (g.graveType || '') !== graveType) return false;
+        if (section) {
+          const gLabel = getSectionLabel(g.locationString);
+          if (gLabel == null || gLabel.trim() !== section.trim()) return false;
+        }
+        if (funeral && (g.funeralHome || '').trim() !== funeral.trim()) return false;
+        if (graveType && (g.graveType || '').trim() !== graveType.trim()) return false;
         if (birthYearFrom != null && (g.birthYear == null || g.birthYear < birthYearFrom)) return false;
         if (birthYearTo != null && (g.birthYear == null || g.birthYear > birthYearTo)) return false;
         return true;
@@ -635,16 +692,7 @@
       filteredGraves = getFilteredGraves();
       updateListPanel();
       if (map.getSource && map.getSource('graves')) {
-        const withCoords = filteredGraves.filter(g => g.lat != null && g.lng != null);
-        const geojson = {
-          type: 'FeatureCollection',
-          features: withCoords.map(g => ({
-            type: 'Feature',
-            geometry: { type: 'Point', coordinates: [g.lng, g.lat] },
-            properties: { id: g.id }
-          }))
-        };
-        map.getSource('graves').setData(geojson);
+        map.getSource('graves').setData(buildGravesGeojson(filteredGraves));
       }
       if (tourActive && filteredGravesWithCoords().length > 0) {
         tourStep = Math.min(tourStep, filteredGravesWithCoords().length - 1);
@@ -801,9 +849,9 @@
     }
 
     function populateFilterOptions() {
-      const sections = [...new Set(graves.map(g => g.locationString).filter(Boolean))].sort().slice(0, 100);
-      const funerals = [...new Set(graves.map(g => g.funeralHome).filter(Boolean))].sort().slice(0, 80);
-      const graveTypes = [...new Set(graves.map(g => g.graveType).filter(Boolean))].sort().slice(0, 50);
+      const sections = [...new Set(graves.map(g => getSectionLabel(g.locationString)).filter(Boolean))].sort().slice(0, 100);
+      const funerals = [...new Set(graves.map(g => (g.funeralHome || '').trim()).filter(Boolean))].sort().slice(0, 80);
+      const graveTypes = [...new Set(graves.map(g => (g.graveType || '').trim()).filter(Boolean))].sort().slice(0, 50);
       const years = [...new Set(graves.map(g => g.birthYear).filter(Boolean))].filter(y => y >= 1850 && y <= 2030).sort((a, b) => a - b);
 
       const genderSel = document.getElementById('filter-gender');
@@ -831,18 +879,9 @@
           graves = data;
           gravesWithCoords = graves.filter(g => g.lat != null && g.lng != null);
 
-          const geojson = {
-            type: 'FeatureCollection',
-            features: gravesWithCoords.map(g => ({
-              type: 'Feature',
-              geometry: { type: 'Point', coordinates: [g.lng, g.lat] },
-              properties: { id: g.id }
-            }))
-          };
-
           map.addSource('graves', {
             type: 'geojson',
-            data: geojson,
+            data: buildGravesGeojson(graves),
             cluster: true,
             clusterMaxZoom: 16,
             clusterRadius: 50
@@ -880,11 +919,24 @@
             source: 'graves',
             filter: ['!', ['has', 'point_count']],
             paint: {
-              'circle-color': '#5c4a32',
-              'circle-radius': 6,
+              'circle-color': ['case', ['>', ['get', 'count'], 1], '#b76e79', '#5c4a32'],
+              'circle-radius': ['step', ['get', 'count'], 6, 2, 8, 5, 12, 10, 15, 20, 20],
               'circle-stroke-width': 2,
               'circle-stroke-color': '#e8dfd0'
             }
+          });
+
+          map.addLayer({
+            id: 'graves-unclustered-count',
+            type: 'symbol',
+            source: 'graves',
+            filter: ['all', ['!', ['has', 'point_count']], ['>=', ['get', 'count'], 10]],
+            layout: {
+              'text-field': ['to-string', ['get', 'count']],
+              'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+              'text-size': 11
+            },
+            paint: { 'text-color': '#ffffff' }
           });
 
           map.addSource('graves-hover', {
@@ -943,16 +995,44 @@
           map.on('click', 'graves-unclustered', (e) => {
             const features = map.queryRenderedFeatures(e.point, { layers: ['graves-unclustered'] });
             if (!features.length) return;
-            const id = features[0].properties.id;
+            const props = features[0].properties;
+            let ids = [];
+            try { ids = props.ids ? JSON.parse(props.ids) : (props.id != null ? [props.id] : []); } catch (_) {}
+            const gravesAtLocation = ids.map(id => graves.find(x => x.id === id)).filter(Boolean);
+            if (gravesAtLocation.length === 0) return;
+            if (gravesAtLocation.length === 1) {
+              selectGrave(gravesAtLocation[0]);
+              return;
+            }
+            if (popupInstance) popupInstance.remove();
+            const [lng, lat] = features[0].geometry.coordinates;
+            popupInstance = new mapboxgl.Popup({ offset: 25, closeButton: true })
+              .setLngLat([lng, lat])
+              .setHTML(createPopupHTMLForMultiple(gravesAtLocation))
+              .addTo(map);
+            map.flyTo({ center: [lng, lat], zoom: GRAVE_ZOOM_CLOSE, speed: 0.5, curve: 1.2, essential: true });
+          });
+          document.getElementById('map').addEventListener('click', (e) => {
+            const link = e.target.closest('.popup-related-link');
+            if (!link || !link.closest('.mapboxgl-popup')) return;
+            e.preventDefault();
+            e.stopPropagation();
+            const id = parseInt(link.dataset.id, 10);
             const g = graves.find(x => x.id === id);
-            if (g) selectGrave(g);
+            if (g) {
+              if (popupInstance) { popupInstance.remove(); popupInstance = null; }
+              selectGrave(g);
+            }
           });
 
           map.on('mouseenter', 'graves-unclustered', (e) => {
             map.getCanvas().style.cursor = 'pointer';
             const features = map.queryRenderedFeatures(e.point, { layers: ['graves-unclustered'] });
             if (features.length) {
-              const g = graves.find(x => x.id === features[0].properties.id);
+              const props = features[0].properties;
+              let ids = [];
+              try { ids = props.ids ? JSON.parse(props.ids) : (props.id != null ? [props.id] : []); } catch (_) {}
+              const g = ids.length ? graves.find(x => x.id === ids[0]) : null;
               if (g) setHoveredGrave(g);
             }
           });
@@ -962,6 +1042,14 @@
           });
           map.on('mouseenter', 'graves-clusters', () => { map.getCanvas().style.cursor = 'pointer'; });
           map.on('mouseleave', 'graves-clusters', () => { map.getCanvas().style.cursor = ''; });
+
+          map.on('click', (e) => {
+            const hit = map.queryRenderedFeatures(e.point, { layers: ['graves-unclustered', 'graves-clusters'] });
+            if (hit.length === 0) {
+              selectGrave(null);
+              if (popupInstance) { popupInstance.remove(); popupInstance = null; }
+            }
+          });
 
           filteredGraves = graves;
           populateFilterOptions();
