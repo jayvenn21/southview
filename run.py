@@ -28,6 +28,27 @@ def print_step(msg):
     print(f"  {msg}")
     print(f"{'─'*50}")
 
+def setup_mapbox_token():
+    config_file = "config.js"
+    if os.path.exists(config_file):
+        print("  config.js already exists, skipping.")
+        return
+
+    print_step("Step 0: Mapbox Token Setup")
+    print("  A Mapbox token is required to run this app.")
+    print("  Copy this link into your browser to find your token at https://account.mapbox.com/\n")
+
+    token = input("  Paste your Mapbox token here and press Enter: ").strip()
+
+    if not token:
+        print("\n  No token entered. Exiting.")
+        input("\nPress Enter to exit...")
+        sys.exit(1)
+
+    with open(config_file, "w") as f:
+        f.write(f"var MAPBOX_ACCESS_TOKEN = '{token}';\n")
+
+    print(f"\n config.js created successfully.")
 
 def run_csv_script():
     print_step(f"Step 1: Running CSV script ({CSV_SCRIPT})...")
@@ -87,6 +108,7 @@ def wait_for_exit(httpd):
 
 
 if __name__ == "__main__":
+    setup_mapbox_token()
     run_csv_script()
     httpd = start_server()
     open_browser()
