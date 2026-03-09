@@ -371,12 +371,23 @@
           <a id="get-directions-link" href="#" target="_blank" rel="noopener" class="get-directions-link" style="display:none;">Get Directions</a>
         </div>
         <div class="historical-section" id="historical-section">
-          <h4>Figures Connected to South-View</h4>
-          <div class="hist-item"><strong>Martin Luther King Sr.</strong><span>Funeral held at South-View Cemetery. Buried at Lincoln Cemetery, Atlanta.</span></div>
-          <div class="hist-item"><strong>John Wesley Dobbs</strong><span>Known as the "unofficial mayor of Auburn Avenue." Civic leader tied to the South-View community.</span></div>
-          <div class="hist-item"><strong>Alonzo Herndon</strong><span>Founder of Atlanta Life Insurance. Buried at South-View; his legacy shaped Black Atlanta's economy.</span></div>
-          <div class="hist-item"><strong>Antoine Graves</strong><span>One of the original founders of South-View Cemetery in 1886, ensuring Black families had a dignified place of rest.</span></div>
-          <div class="hist-item"><strong>Dr. Henry Rutherford Butler</strong><span>Physician and civil rights leader. Among the early advocates for Black healthcare in Atlanta.</span></div>
+          <h4>History in the Neighborhood</h4>
+          <div class="hist-item"><strong>Martin Luther King, Jr. (1929–1968)</strong><span>Civil rights icon. Originally buried at South-View in 1968, later moved to the King Center. His parents, grandparents, and brother rest here.</span></div>
+          <div class="hist-item"><strong>Alonzo Herndon (1858–1927)</strong><span>Born into slavery. Founded Atlanta Mutual Insurance (now Atlanta Life). Atlanta's wealthiest Black citizen at his death.</span></div>
+          <div class="hist-item"><strong>Horace Mann Bond (1904–1972)</strong><span>Pioneering Black educator. Dean at Atlanta University, President of Fort Valley State and Lincoln University. Critiqued race and intelligence testing.</span></div>
+          <div class="hist-item"><strong>John Wesley Edward Bowen (1855–1933)</strong><span>First African American to earn a Ph.D. from Boston University. President of Gammon Theological Seminary. Beaten during the 1906 Atlanta Race Riots for sheltering Black residents.</span></div>
+          <div class="hist-item"><strong>Dinah Watts Pace (1853–1933)</strong><span>Born enslaved in Athens, GA. Founded Covington Colored Orphans Home (1890). Graduated from Atlanta University. Dinah Pace Road is named in her honor.</span></div>
+          <div id="hist-more" style="display:none;">
+            <div class="hist-item"><strong>Geneva Moton Haugabrooks (1888–?)</strong><span>Founded Haugabrooks Funeral Home on Auburn Avenue in 1929 with less than $300. The only woman to open a funeral home in Atlanta at the time. Still in operation today.</span></div>
+            <div class="hist-item"><strong>Grace Towns Hamilton (1907–1992)</strong><span>First African American woman elected to the Georgia General Assembly (1965). Executive director of the Atlanta Urban League. Inducted into Georgia Women of Achievement.</span></div>
+            <div class="hist-item"><strong>Carolyn "Marge" Yancey (1921–?)</strong><span>Served on the Atlanta Board of Education for 16 years. First African American woman appointed to the Georgia University System Board of Regents.</span></div>
+            <div class="hist-item"><strong>Freddye Scarborough Henderson (1917–?)</strong><span>First African American to study Fashion Merchandising at NYU. Co-founded NAFAD. Arranged Dr. King's trip to receive the Nobel Peace Prize. Named "Queen Mother of Travel" by Ghana.</span></div>
+            <div class="hist-item"><strong>Graham W. Jackson, Sr. (1903–?)</strong><span>President Roosevelt's favorite musician. His photograph weeping while playing the accordion as Roosevelt's body left Warm Springs became a Life Magazine icon.</span></div>
+            <div class="hist-item"><strong>Annie L. McPheeters (1908–1994)</strong><span>One of Atlanta's first African American professional librarians. Helped desegregate the Atlanta Public Library (1959). Washington Park branch named in her honor.</span></div>
+            <div class="hist-item"><strong>Lillian Miles Lewis (1939–?)</strong><span>Wife of Congressman John Lewis. Key strategist behind his political career. Director of External Affairs at Clark Atlanta University.</span></div>
+            <div class="hist-item"><strong>Jean Childs Young (1933–1994)</strong><span>Wife of Mayor Andrew Young. Chaired the U.S. Commission on the International Year of the Child. Helped Atlanta win the 1996 Olympic bid.</span></div>
+          </div>
+          <button type="button" class="more-filters-toggle" id="hist-toggle" style="margin-top:6px;">Show more</button>
         </div>
       </div>
     </aside>
@@ -403,6 +414,13 @@
       </div>
       <div class="map-actions" id="map-actions">
         <button type="button" class="btn-reset" id="reset-map">Reset map</button>
+        <select id="explorer-count" title="Number of stops" style="padding:8px 10px;font-size:13px;font-family:'Source Serif 4',Georgia,serif;border:1px solid #e8e4df;border-radius:10px;background:#fff;color:#1a1a1a;cursor:pointer;">
+          <option value="10">10 stops</option>
+          <option value="20" selected>20 stops</option>
+          <option value="50">50 stops</option>
+          <option value="100">100 stops</option>
+          <option value="all">All</option>
+        </select>
         <button type="button" class="btn-tour" id="start-tour">Start Explorer Mode</button>
       </div>
       <div class="tour-controls" id="tour-controls">
@@ -779,6 +797,7 @@
     }
 
     function applyFilters() {
+      listExpanded = false;
       filteredGraves = getFilteredGraves();
       updateListPanel();
       if (map.getSource && map.getSource('graves')) {
@@ -813,10 +832,15 @@
       }
     }
 
+    let listExpanded = false;
+    const LIST_COLLAPSED_COUNT = 5;
+
     function updateListPanel() {
       const listEl = document.getElementById('list-panel-list');
       listEl.innerHTML = '';
-      filteredGraves.slice(0, 200).forEach(g => {
+      const total = filteredGraves.length;
+      const showCount = listExpanded ? Math.min(total, 200) : Math.min(total, LIST_COLLAPSED_COUNT);
+      filteredGraves.slice(0, showCount).forEach(g => {
         const name = (g.fullName || [g.firstName, g.middleName, g.lastName].filter(Boolean).join(' ')).trim();
         const sub = [g.locationString, g.deathDate ? g.deathDate.slice(0, 4) : ''].filter(Boolean).join(' · ');
         const div = document.createElement('div');
@@ -836,12 +860,27 @@
         div.addEventListener('mouseleave', () => { setHoveredGrave(null); });
         listEl.appendChild(div);
       });
-      if (filteredGraves.length > 200) {
-        const more = document.createElement('div');
-        more.className = 'list-panel-item';
-        more.style.fontStyle = 'italic';
-        more.textContent = `+ ${filteredGraves.length - 200} more. Use filters to narrow.`;
-        listEl.appendChild(more);
+      if (!listExpanded && total > LIST_COLLAPSED_COUNT) {
+        const toggle = document.createElement('button');
+        toggle.className = 'more-filters-toggle';
+        toggle.textContent = `Show all ${total.toLocaleString()} burials`;
+        toggle.style.marginTop = '6px';
+        toggle.addEventListener('click', () => { listExpanded = true; updateListPanel(); });
+        listEl.appendChild(toggle);
+      } else if (listExpanded && total > LIST_COLLAPSED_COUNT) {
+        if (total > 200) {
+          const cap = document.createElement('div');
+          cap.className = 'list-panel-item';
+          cap.style.fontStyle = 'italic';
+          cap.textContent = `Showing 200 of ${total.toLocaleString()}. Use filters to narrow.`;
+          listEl.appendChild(cap);
+        }
+        const collapse = document.createElement('button');
+        collapse.className = 'more-filters-toggle';
+        collapse.textContent = 'Show less';
+        collapse.style.marginTop = '6px';
+        collapse.addEventListener('click', () => { listExpanded = false; updateListPanel(); });
+        listEl.appendChild(collapse);
       }
     }
 
@@ -915,7 +954,9 @@
     function startTour() {
       const withCoords = filteredGravesWithCoords();
       if (withCoords.length === 0) return;
-      tourPathGraves = shuffleArray(withCoords).slice(0, 20);
+      const countVal = document.getElementById('explorer-count').value;
+      const count = countVal === 'all' ? withCoords.length : parseInt(countVal, 10);
+      tourPathGraves = shuffleArray(withCoords).slice(0, count);
       tourActive = true;
       tourStep = 0;
       document.getElementById('map-actions').style.display = 'none';
@@ -1234,6 +1275,13 @@
       });
       document.getElementById('map-info-close').addEventListener('click', () => {
         document.getElementById('map-info-card').classList.remove('open');
+      });
+
+      document.getElementById('hist-toggle').addEventListener('click', function() {
+        const more = document.getElementById('hist-more');
+        const showing = more.style.display !== 'none';
+        more.style.display = showing ? 'none' : '';
+        this.textContent = showing ? 'Show more' : 'Show less';
       });
 
     });
