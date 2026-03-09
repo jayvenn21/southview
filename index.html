@@ -423,7 +423,17 @@
     let filteredGraves = [];
     let tourActive = false;
     let tourStep = 0;
+    let tourPathGraves = [];
     let selectedGrave = null;
+
+    function shuffleArray(arr) {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
     let selectedMarkerPulseInterval = null;
 
     function formatDate(str) {
@@ -694,8 +704,8 @@
       if (map.getSource && map.getSource('graves')) {
         map.getSource('graves').setData(buildGravesGeojson(filteredGraves));
       }
-      if (tourActive && filteredGravesWithCoords().length > 0) {
-        tourStep = Math.min(tourStep, filteredGravesWithCoords().length - 1);
+      if (tourActive && tourPathGraves.length > 0) {
+        tourStep = Math.min(tourStep, tourPathGraves.length - 1);
         updateTourPath();
       }
     }
@@ -756,7 +766,8 @@
     }
 
     function getTourPathCoords() {
-      return filteredGravesWithCoords().slice(0, 20).map(g => [g.lng, g.lat]);
+      const arr = tourPathGraves.length ? tourPathGraves : filteredGravesWithCoords().slice(0, 20);
+      return arr.map(g => [g.lng, g.lat]);
     }
 
     function getProgressPathCoords() {
@@ -765,9 +776,9 @@
     }
 
     function getTourCalloutText(step) {
-      const arr = filteredGravesWithCoords();
+      const arr = tourPathGraves.length ? tourPathGraves : filteredGravesWithCoords().slice(0, 20);
       if (arr.length === 0) return '';
-      const maxStops = Math.min(20, arr.length);
+      const maxStops = arr.length;
       if (step === 0) return 'Explorer Mode — interactive walkthrough of the cemetery.';
       if (step === maxStops - 1) return "Final stop. You've completed the interactive cemetery walkthrough.";
       const g = arr[step];
@@ -780,7 +791,7 @@
       const progressCoords = getProgressPathCoords();
       map.getSource('tour-path-full').setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: fullCoords } });
       map.getSource('tour-path-progress').setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: progressCoords } });
-      const total = filteredGravesWithCoords().length;
+      const total = tourPathGraves.length || filteredGravesWithCoords().length;
       const maxStops = Math.min(20, total);
       const current = total > 0 ? Math.min(tourStep + 1, maxStops) : 0;
       document.getElementById('tour-step').textContent = total > 0 ? `Stop ${current} of ${maxStops} — Explorer Mode` : '0 / 0';
@@ -799,19 +810,20 @@
     }
 
     function goToTourStop(step) {
-      const arr = filteredGravesWithCoords();
+      const arr = tourPathGraves.length ? tourPathGraves : filteredGravesWithCoords().slice(0, 20);
       if (arr.length === 0) return;
-      const maxStep = Math.min(20, arr.length) - 1;
+      const maxStep = arr.length - 1;
       tourStep = Math.max(0, Math.min(step, maxStep));
       const g = arr[tourStep];
       updateTourPath();
       selectGrave(g);
-      showTourCallout(getTourCalloutContent(tourStep));
+      showTourCallout(getTourCalloutText(tourStep));
       document.getElementById('tour-prev').disabled = tourStep === 0;
     }
 
     function exitTour() {
       tourActive = false;
+      tourPathGraves = [];
       document.getElementById('map-actions').style.display = 'flex';
       document.getElementById('tour-controls').classList.remove('visible');
       hideTourCallout();
@@ -821,7 +833,9 @@
     }
 
     function startTour() {
-      if (filteredGravesWithCoords().length === 0) return;
+      const withCoords = filteredGravesWithCoords();
+      if (withCoords.length === 0) return;
+      tourPathGraves = shuffleArray(withCoords).slice(0, 20);
       tourActive = true;
       tourStep = 0;
       document.getElementById('map-actions').style.display = 'none';
@@ -1127,10 +1141,9 @@
 
       document.getElementById('start-tour').addEventListener('click', startTour);
       document.getElementById('tour-next').addEventListener('click', () => {
-        const arr = filteredGravesWithCoords();
+        const arr = tourPathGraves.length ? tourPathGraves : filteredGravesWithCoords().slice(0, 20);
         if (arr.length === 0) return;
-        const maxStep = Math.min(20, arr.length);
-        const next = (tourStep + 1) % maxStep;
+        const next = (tourStep + 1) % arr.length;
         goToTourStop(next);
       });
       document.getElementById('tour-prev').addEventListener('click', () => goToTourStop(tourStep - 1));
