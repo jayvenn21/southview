@@ -50,7 +50,8 @@
     .search-wrap input:focus { outline: none; border-color: #b76e79; background: #fff; }
     .filters-section { margin-bottom: 14px; }
     .filters-section label { display: block; font-size: 11px; color: #6b5d4a; margin-bottom: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
-    .filters-section select {
+    .filters-section select,
+    .filters-section input[type="text"] {
       width: 100%;
       padding: 6px 10px;
       font-size: 13px;
@@ -60,8 +61,10 @@
       background: #faf9f7;
       color: #1a1a1a;
       margin-bottom: 8px;
+      box-sizing: border-box;
     }
-    .filters-section select:focus { outline: none; border-color: #b76e79; }
+    .filters-section select:focus,
+    .filters-section input[type="text"]:focus { outline: none; border-color: #b76e79; }
     .filters-row { display: flex; gap: 8px; margin-bottom: 8px; }
     .filters-row select { flex: 1; margin-bottom: 0; }
     .more-filters-toggle {
@@ -278,9 +281,8 @@
             <option value="">All</option>
           </select>
           <label>Section</label>
-          <select id="filter-section">
-            <option value="">All</option>
-          </select>
+          <input type="text" id="filter-section" list="filter-section-list" placeholder="All" autocomplete="off">
+          <datalist id="filter-section-list"></datalist>
           <label>Birth year range</label>
           <div class="filters-row">
             <select id="filter-birth-year-from">
@@ -296,13 +298,11 @@
           </div>
           <div class="more-filters" id="more-filters">
             <label>Funeral home</label>
-            <select id="filter-funeral">
-              <option value="">All</option>
-            </select>
+            <input type="text" id="filter-funeral" list="filter-funeral-list" placeholder="All" autocomplete="off">
+            <datalist id="filter-funeral-list"></datalist>
             <label>Grave type</label>
-            <select id="filter-grave-type">
-              <option value="">All</option>
-            </select>
+            <input type="text" id="filter-grave-type" list="filter-grave-type-list" placeholder="All" autocomplete="off">
+            <datalist id="filter-grave-type-list"></datalist>
             <div class="filter-links-row filter-links-row-inside">
               <button type="button" class="more-filters-toggle" id="less-filters-toggle">Less filters</button>
               <button type="button" class="filter-link clear-filters-btn" id="clear-filters-inside">Clear filters</button>
@@ -688,10 +688,10 @@
         if (gender && normalizeGender(g.gender) !== gender) return false;
         if (section) {
           const gLabel = getSectionLabel(g.locationString);
-          if (gLabel == null || gLabel.trim() !== section.trim()) return false;
+          if (gLabel == null || gLabel.trim().toLowerCase().indexOf(section.trim().toLowerCase()) === -1) return false;
         }
-        if (funeral && (g.funeralHome || '').trim() !== funeral.trim()) return false;
-        if (graveType && (g.graveType || '').trim() !== graveType.trim()) return false;
+        if (funeral && (g.funeralHome || '').trim().toLowerCase().indexOf(funeral.trim().toLowerCase()) === -1) return false;
+        if (graveType && (g.graveType || '').trim().toLowerCase().indexOf(graveType.trim().toLowerCase()) === -1) return false;
         if (birthYearFrom != null && (g.birthYear == null || g.birthYear < birthYearFrom)) return false;
         if (birthYearTo != null && (g.birthYear == null || g.birthYear > birthYearTo)) return false;
         return true;
@@ -871,10 +871,10 @@
       const genderSel = document.getElementById('filter-gender');
       genderSel.innerHTML = '<option value="">All</option>' + GENDER_OPTIONS.map(o => `<option value="${escapeHtml(o.value)}">${escapeHtml(o.label)}</option>`).join('');
 
-      ['filter-section', 'filter-funeral', 'filter-grave-type'].forEach((id, i) => {
+      ['filter-section-list', 'filter-funeral-list', 'filter-grave-type-list'].forEach((id, i) => {
         const opts = [sections, funerals, graveTypes][i];
-        const sel = document.getElementById(id);
-        sel.innerHTML = '<option value="">All</option>' + opts.map(o => `<option value="${escapeHtml(String(o))}">${escapeHtml(String(o))}</option>`).join('');
+        const dl = document.getElementById(id);
+        dl.innerHTML = opts.map(o => `<option value="${escapeHtml(String(o))}">`).join('');
       });
       const fromSel = document.getElementById('filter-birth-year-from');
       const toSel = document.getElementById('filter-birth-year-to');
@@ -1100,9 +1100,9 @@
 
       document.getElementById('search-name').addEventListener('input', applyFilters);
       document.getElementById('filter-gender').addEventListener('change', applyFilters);
-      document.getElementById('filter-section').addEventListener('change', applyFilters);
-      document.getElementById('filter-funeral').addEventListener('change', applyFilters);
-      document.getElementById('filter-grave-type').addEventListener('change', applyFilters);
+      document.getElementById('filter-section').addEventListener('input', applyFilters);
+      document.getElementById('filter-funeral').addEventListener('input', applyFilters);
+      document.getElementById('filter-grave-type').addEventListener('input', applyFilters);
 
       function doClearFilters() {
         document.getElementById('search-name').value = '';
