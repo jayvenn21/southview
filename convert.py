@@ -143,12 +143,15 @@ def main():
     os.makedirs(DATA_DIR, exist_ok=True)
 
     df = pd.read_csv(INPUT_FILE, header=0)
-    df.columns = [
+    cols = [
         "rawId", "fullName", "firstName", "middleName", "lastName",
         "lat", "lng", "birthDate", "deathDate", "serviceDate",
         "age", "gender", "locationString", "lot", "space",
         "vaultType", "graveType", "funeralHome",
     ]
+    if len(df.columns) > len(cols):
+        cols += [f"extra_{i}" for i in range(len(df.columns) - len(cols))]
+    df.columns = cols
 
     df["id"] = df["rawId"].apply(clean_id)
     df["birthDate"] = df["birthDate"].apply(clean_date)
@@ -186,16 +189,18 @@ def main():
     for col in df.columns:
         df[col] = df[col].apply(none_if_null)
 
-    output_df = df[
-        [
-            "id", "firstName", "middleName", "lastName", "fullName",
-            "lat", "lng", "age", "gender",
-            "birthDate", "deathDate", "serviceDate",
-            "birthYear", "deathYear", "serviceYear",
-            "locationString", "lot", "space",
-            "vaultType", "graveType", "funeralHome",
-        ]
+    output_cols = [
+        "id", "firstName", "middleName", "lastName", "fullName",
+        "lat", "lng", "age", "gender",
+        "birthDate", "deathDate", "serviceDate",
+        "birthYear", "deathYear", "serviceYear",
+        "locationString", "lot", "space",
+        "vaultType", "graveType", "funeralHome",
     ]
+    for col in output_cols:
+        if col not in df.columns:
+            df[col] = None
+    output_df = df[output_cols]
 
     raw = output_df.to_dict(orient="records")
     records = []
