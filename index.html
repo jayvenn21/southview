@@ -200,9 +200,15 @@
       padding-top: 14px;
     }
     .historical-section h4 { font-size: 11px; font-weight: 700; color: #6b5d4a; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 10px; }
-    .historical-section .hist-item { background: #faf9f7; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; }
+    .historical-section .hist-item { background: #faf9f7; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; cursor: pointer; border: 1px solid transparent; transition: border-color 0.15s; }
+    .historical-section .hist-item:hover { border-color: #e8e4df; }
     .historical-section .hist-item strong { display: block; font-size: 13px; color: #1a1a1a; margin-bottom: 2px; }
-    .historical-section .hist-item span { font-size: 12px; color: #6b5d4a; line-height: 1.5; }
+    .historical-section .hist-item .hist-role { font-size: 11px; color: #b76e79; font-weight: 600; display: block; margin-bottom: 4px; }
+    .historical-section .hist-item .hist-summary { font-size: 12px; color: #6b5d4a; line-height: 1.5; }
+    .historical-section .hist-facts { display: none; margin-top: 8px; padding-top: 8px; border-top: 1px solid #e8e4df; }
+    .historical-section .hist-facts.open { display: block; }
+    .historical-section .hist-facts ul { margin: 0; padding-left: 16px; }
+    .historical-section .hist-facts li { font-size: 12px; color: #444; line-height: 1.6; margin-bottom: 4px; }
     .list-view-wrap { display: block; }
     .list-view-wrap.hidden { display: none !important; }
     .map-wrap {
@@ -371,23 +377,8 @@
           <a id="get-directions-link" href="#" target="_blank" rel="noopener" class="get-directions-link" style="display:none;">Get Directions</a>
         </div>
         <div class="historical-section" id="historical-section">
-          <h4>History in the Neighborhood</h4>
-          <div class="hist-item"><strong>Martin Luther King, Jr. (1929–1968)</strong><span>Civil rights icon. Originally buried at South-View in 1968, later moved to the King Center. His parents, grandparents, and brother rest here.</span></div>
-          <div class="hist-item"><strong>Alonzo Herndon (1858–1927)</strong><span>Born into slavery. Founded Atlanta Mutual Insurance (now Atlanta Life). Atlanta's wealthiest Black citizen at his death.</span></div>
-          <div class="hist-item"><strong>Horace Mann Bond (1904–1972)</strong><span>Pioneering Black educator. Dean at Atlanta University, President of Fort Valley State and Lincoln University. Critiqued race and intelligence testing.</span></div>
-          <div class="hist-item"><strong>John Wesley Edward Bowen (1855–1933)</strong><span>First African American to earn a Ph.D. from Boston University. President of Gammon Theological Seminary. Beaten during the 1906 Atlanta Race Riots for sheltering Black residents.</span></div>
-          <div class="hist-item"><strong>Dinah Watts Pace (1853–1933)</strong><span>Born enslaved in Athens, GA. Founded Covington Colored Orphans Home (1890). Graduated from Atlanta University. Dinah Pace Road is named in her honor.</span></div>
-          <div id="hist-more" style="display:none;">
-            <div class="hist-item"><strong>Geneva Moton Haugabrooks (1888–?)</strong><span>Founded Haugabrooks Funeral Home on Auburn Avenue in 1929 with less than $300. The only woman to open a funeral home in Atlanta at the time. Still in operation today.</span></div>
-            <div class="hist-item"><strong>Grace Towns Hamilton (1907–1992)</strong><span>First African American woman elected to the Georgia General Assembly (1965). Executive director of the Atlanta Urban League. Inducted into Georgia Women of Achievement.</span></div>
-            <div class="hist-item"><strong>Carolyn "Marge" Yancey (1921–?)</strong><span>Served on the Atlanta Board of Education for 16 years. First African American woman appointed to the Georgia University System Board of Regents.</span></div>
-            <div class="hist-item"><strong>Freddye Scarborough Henderson (1917–?)</strong><span>First African American to study Fashion Merchandising at NYU. Co-founded NAFAD. Arranged Dr. King's trip to receive the Nobel Peace Prize. Named "Queen Mother of Travel" by Ghana.</span></div>
-            <div class="hist-item"><strong>Graham W. Jackson, Sr. (1903–?)</strong><span>President Roosevelt's favorite musician. His photograph weeping while playing the accordion as Roosevelt's body left Warm Springs became a Life Magazine icon.</span></div>
-            <div class="hist-item"><strong>Annie L. McPheeters (1908–1994)</strong><span>One of Atlanta's first African American professional librarians. Helped desegregate the Atlanta Public Library (1959). Washington Park branch named in her honor.</span></div>
-            <div class="hist-item"><strong>Lillian Miles Lewis (1939–?)</strong><span>Wife of Congressman John Lewis. Key strategist behind his political career. Director of External Affairs at Clark Atlanta University.</span></div>
-            <div class="hist-item"><strong>Jean Childs Young (1933–1994)</strong><span>Wife of Mayor Andrew Young. Chaired the U.S. Commission on the International Year of the Child. Helped Atlanta win the 1996 Olympic bid.</span></div>
-          </div>
-          <button type="button" class="more-filters-toggle" id="hist-toggle" style="margin-top:6px;">Show more</button>
+          <h4>Notable Figures at South-View</h4>
+          <div id="notable-figures-list"></div>
         </div>
       </div>
     </aside>
@@ -1277,12 +1268,43 @@
         document.getElementById('map-info-card').classList.remove('open');
       });
 
-      document.getElementById('hist-toggle').addEventListener('click', function() {
-        const more = document.getElementById('hist-more');
-        const showing = more.style.display !== 'none';
-        more.style.display = showing ? 'none' : '';
-        this.textContent = showing ? 'Show more' : 'Show less';
-      });
+      fetch('data/notable-figures.json')
+        .then(r => r.json())
+        .then(figures => {
+          const container = document.getElementById('notable-figures-list');
+          const INITIAL_SHOW = 5;
+          figures.forEach((fig, idx) => {
+            const item = document.createElement('div');
+            item.className = 'hist-item';
+            if (idx >= INITIAL_SHOW) item.style.display = 'none';
+            item.dataset.figIdx = idx;
+            item.innerHTML =
+              `<strong>${escapeHtml(fig.name)}${fig.dates ? ' (' + escapeHtml(fig.dates) + ')' : ''}</strong>` +
+              `<span class="hist-role">${escapeHtml(fig.role)}</span>` +
+              `<span class="hist-summary">${escapeHtml(fig.summary)}</span>` +
+              `<div class="hist-facts"><ul>${fig.facts.map(f => '<li>' + escapeHtml(f) + '</li>').join('')}</ul></div>`;
+            item.addEventListener('click', () => {
+              item.querySelector('.hist-facts').classList.toggle('open');
+            });
+            container.appendChild(item);
+          });
+          if (figures.length > INITIAL_SHOW) {
+            const toggle = document.createElement('button');
+            toggle.className = 'more-filters-toggle';
+            toggle.style.marginTop = '6px';
+            toggle.textContent = `Show all ${figures.length} figures`;
+            let expanded = false;
+            toggle.addEventListener('click', () => {
+              expanded = !expanded;
+              container.querySelectorAll('.hist-item').forEach((el, i) => {
+                el.style.display = (expanded || i < INITIAL_SHOW) ? '' : 'none';
+              });
+              toggle.textContent = expanded ? 'Show less' : `Show all ${figures.length} figures`;
+            });
+            container.appendChild(toggle);
+          }
+        })
+        .catch(() => {});
 
     });
   </script>
