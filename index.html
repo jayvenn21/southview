@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>South View Cemetery — Notable Figures</title>
+  <title>South View Cemetery - Notable Figures</title>
   <link rel="icon" href="cemelogo.png" type="image/png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
@@ -20,10 +20,27 @@
       display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0;
     }
     .sidebar-header {
-      padding: 20px 24px 16px; border-bottom: 1px solid #e8e4df;
+      padding: 16px 20px 12px; border-bottom: 1px solid #e8e4df;
       display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
     }
-    .site-logo { height: 40px; width: auto; display: block; }
+    .site-logo { height: 36px; width: auto; display: block; }
+    .staff-link {
+      font-size: 12px; color: #b76e79; font-weight: 600; text-decoration: none;
+      font-family: "Source Serif 4", Georgia, serif;
+    }
+    .staff-link:hover { text-decoration: underline; }
+
+    .search-bar {
+      padding: 10px 18px; border-bottom: 1px solid #e8e4df; flex-shrink: 0;
+    }
+    .search-input {
+      width: 100%; padding: 8px 12px; font-size: 13px;
+      font-family: "Source Serif 4", Georgia, serif;
+      border: 1px solid #e0dcd6; border-radius: 8px; background: #faf9f7;
+      outline: none;
+    }
+    .search-input:focus { border-color: #b76e79; }
+
     .sidebar-body { flex: 1; overflow-y: auto; padding: 14px 18px 18px; }
 
     .section-title {
@@ -41,6 +58,7 @@
     .figure-card.active { border-color: #b76e79; background: #fdf6f0; }
     .figure-card .fc-name { font-size: 14px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
     .figure-card .fc-role { font-size: 11px; color: #b76e79; font-weight: 600; }
+    .no-results { font-size: 13px; color: #999; padding: 20px 0; text-align: center; }
 
     .detail-panel { display: none; flex-direction: column; gap: 12px; }
     .detail-panel.visible { display: flex; }
@@ -99,17 +117,6 @@
     }
     .tour-step-text { font-size: 13px; font-weight: 600; min-width: 60px; text-align: center; }
 
-    .figure-marker {
-      width: 32px; height: 32px; background: #b76e79; border: 3px solid #fff;
-      border-radius: 50%; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-      transition: transform 0.2s;
-    }
-    .figure-marker:hover { transform: scale(1.2); }
-    .figure-marker.active {
-      background: #C19A6B; border-color: #fff; transform: scale(1.3);
-      box-shadow: 0 0 0 6px rgba(193,154,107,0.3), 0 2px 8px rgba(0,0,0,0.25);
-    }
-
     .mapboxgl-popup-content {
       padding: 14px 16px; min-width: 200px; border-radius: 10px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.12); border: 1px solid #e8e4df;
@@ -125,6 +132,10 @@
     <aside class="sidebar">
       <div class="sidebar-header">
         <img src="cemelogo.png" alt="South View Cemetery" class="site-logo">
+        <a href="https://forms.gle/oExirtBkM2D2BWVD7" target="_blank" rel="noopener" class="staff-link">Submit Grave Info</a>
+      </div>
+      <div class="search-bar">
+        <input type="text" class="search-input" id="search-input" placeholder="Search notable figures...">
       </div>
       <div class="sidebar-body">
         <div id="list-view">
@@ -132,7 +143,7 @@
           <div class="figure-list" id="figure-list"></div>
         </div>
         <div class="detail-panel" id="detail-panel">
-          <button type="button" class="detail-back" id="detail-back">← All figures</button>
+          <button type="button" class="detail-back" id="detail-back">&larr; All figures</button>
           <div class="detail-name" id="detail-name"></div>
           <div class="detail-dates" id="detail-dates"></div>
           <div class="detail-role" id="detail-role"></div>
@@ -150,9 +161,9 @@
         <button type="button" class="btn-tour" id="start-tour">Start Guided Tour</button>
       </div>
       <div class="tour-controls" id="tour-controls">
-        <button type="button" id="tour-prev">← Prev</button>
+        <button type="button" id="tour-prev">&larr; Prev</button>
         <span id="tour-step" class="tour-step-text">1 / 13</span>
-        <button type="button" id="tour-next">Next →</button>
+        <button type="button" id="tour-next">Next &rarr;</button>
         <button type="button" id="tour-exit">Exit Tour</button>
       </div>
     </div>
@@ -163,12 +174,12 @@
     mapboxgl.accessToken = typeof MAPBOX_ACCESS_TOKEN !== 'undefined' ? MAPBOX_ACCESS_TOKEN : '';
 
     const FIGURES_URL = 'data/notable-figures.json';
-    const INITIAL_CENTER = [-84.3900, 33.7450];
-    const INITIAL_ZOOM = 12.5;
+    const INITIAL_CENTER = [-84.3730, 33.7015];
+    const INITIAL_ZOOM = 16;
 
     let figures = [];
-    let markers = [];
-    let selectedFigure = null;
+    let selectedFigureId = null;
+    let hoveredFigureId = null;
     let tourActive = false;
     let tourStep = 0;
     let popupInstance = null;
@@ -188,98 +199,194 @@
       return d.innerHTML;
     }
 
+    function buildGeoJSON(data) {
+      return {
+        type: 'FeatureCollection',
+        features: data.map(fig => ({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [fig.lng, fig.lat] },
+          properties: {
+            id: fig.id,
+            name: fig.name,
+            role: fig.role,
+            summary: fig.summary
+          }
+        }))
+      };
+    }
+
+    function addMapLayers() {
+      const geojson = buildGeoJSON(figures);
+
+      map.addSource('figures', { type: 'geojson', data: geojson });
+
+      map.addLayer({
+        id: 'figures-halo',
+        type: 'circle',
+        source: 'figures',
+        paint: {
+          'circle-radius': [
+            'case',
+            ['==', ['get', 'id'], ['literal', selectedFigureId || '']], 20,
+            12
+          ],
+          'circle-color': 'transparent',
+          'circle-stroke-color': [
+            'case',
+            ['==', ['get', 'id'], ['literal', selectedFigureId || '']], 'rgba(193,154,107,0.35)',
+            'transparent'
+          ],
+          'circle-stroke-width': [
+            'case',
+            ['==', ['get', 'id'], ['literal', selectedFigureId || '']], 6,
+            0
+          ]
+        }
+      });
+
+      map.addLayer({
+        id: 'figures-markers',
+        type: 'circle',
+        source: 'figures',
+        paint: {
+          'circle-radius': [
+            'case',
+            ['==', ['get', 'id'], ['literal', selectedFigureId || '']], 12,
+            8
+          ],
+          'circle-color': [
+            'case',
+            ['==', ['get', 'id'], ['literal', selectedFigureId || '']], '#C19A6B',
+            '#b76e79'
+          ],
+          'circle-stroke-color': '#ffffff',
+          'circle-stroke-width': 3,
+          'circle-opacity': 1
+        }
+      });
+
+      map.addLayer({
+        id: 'figures-labels',
+        type: 'symbol',
+        source: 'figures',
+        layout: {
+          'text-field': ['get', 'name'],
+          'text-size': 11,
+          'text-offset': [0, 1.8],
+          'text-anchor': 'top',
+          'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
+          'text-max-width': 12
+        },
+        paint: {
+          'text-color': '#1a1a1a',
+          'text-halo-color': '#ffffff',
+          'text-halo-width': 2
+        }
+      });
+    }
+
+    function updateMarkerStyles() {
+      if (!map.getSource('figures')) return;
+      const sel = selectedFigureId || '';
+
+      map.setPaintProperty('figures-markers', 'circle-radius', [
+        'case', ['==', ['get', 'id'], ['literal', sel]], 12, 8
+      ]);
+      map.setPaintProperty('figures-markers', 'circle-color', [
+        'case', ['==', ['get', 'id'], ['literal', sel]], '#C19A6B', '#b76e79'
+      ]);
+      map.setPaintProperty('figures-halo', 'circle-stroke-color', [
+        'case', ['==', ['get', 'id'], ['literal', sel]], 'rgba(193,154,107,0.35)', 'transparent'
+      ]);
+      map.setPaintProperty('figures-halo', 'circle-stroke-width', [
+        'case', ['==', ['get', 'id'], ['literal', sel]], 6, 0
+      ]);
+      map.setPaintProperty('figures-halo', 'circle-radius', [
+        'case', ['==', ['get', 'id'], ['literal', sel]], 20, 12
+      ]);
+    }
+
     function selectFigure(fig) {
-      selectedFigure = fig;
+      selectedFigureId = fig ? fig.id : null;
       const listView = document.getElementById('list-view');
       const detailPanel = document.getElementById('detail-panel');
+      const searchBar = document.querySelector('.search-bar');
 
-      markers.forEach(m => m.el.classList.remove('active'));
       document.querySelectorAll('.figure-card').forEach(c => c.classList.remove('active'));
 
       if (!fig) {
         listView.style.display = '';
+        searchBar.style.display = '';
         detailPanel.classList.remove('visible');
+        updateMarkerStyles();
         return;
       }
 
       listView.style.display = 'none';
+      searchBar.style.display = 'none';
       detailPanel.classList.add('visible');
 
       document.getElementById('detail-name').textContent = fig.name;
       document.getElementById('detail-dates').textContent = fig.dates || '';
       document.getElementById('detail-role').textContent = fig.role;
       document.getElementById('detail-summary').textContent = fig.summary;
-      document.getElementById('detail-facts').innerHTML = fig.facts.map(f => `<li>${escapeHtml(f)}</li>`).join('');
+      document.getElementById('detail-facts').innerHTML = fig.facts.map(f => '<li>' + escapeHtml(f) + '</li>').join('');
 
       const dirLink = document.getElementById('detail-directions');
-      dirLink.href = `https://www.google.com/maps/dir/?api=1&destination=${fig.lat},${fig.lng}`;
+      dirLink.href = 'https://www.google.com/maps/dir/?api=1&destination=' + fig.lat + ',' + fig.lng;
 
-      const marker = markers.find(m => m.fig.id === fig.id);
-      if (marker) marker.el.classList.add('active');
-
-      const card = document.querySelector(`.figure-card[data-id="${fig.id}"]`);
+      const card = document.querySelector('.figure-card[data-id="' + fig.id + '"]');
       if (card) card.classList.add('active');
 
-      map.flyTo({ center: [fig.lng, fig.lat], zoom: 15, speed: 0.8, curve: 1.2 });
+      updateMarkerStyles();
+      map.flyTo({ center: [fig.lng, fig.lat], zoom: 17.5, speed: 0.8, curve: 1.2 });
     }
 
     function buildFigureList() {
       const container = document.getElementById('figure-list');
       container.innerHTML = '';
-      figures.forEach(fig => {
-        const card = document.createElement('div');
+      figures.forEach(function(fig) {
+        var card = document.createElement('div');
         card.className = 'figure-card';
         card.dataset.id = fig.id;
-        card.innerHTML = `<div class="fc-name">${escapeHtml(fig.name)}</div><div class="fc-role">${escapeHtml(fig.role)}</div>`;
-        card.addEventListener('click', () => selectFigure(fig));
+        card.innerHTML = '<div class="fc-name">' + escapeHtml(fig.name) + '</div><div class="fc-role">' + escapeHtml(fig.role) + '</div>';
+        card.addEventListener('click', function() { selectFigure(fig); });
         container.appendChild(card);
       });
     }
 
-    function addMarkers() {
-      figures.forEach(fig => {
-        const el = document.createElement('div');
-        el.className = 'figure-marker';
+    function filterFigures(query) {
+      var q = query.toLowerCase().trim();
+      var container = document.getElementById('figure-list');
+      var cards = container.querySelectorAll('.figure-card');
+      var noResults = container.querySelector('.no-results');
+      if (noResults) noResults.remove();
 
-        const marker = new mapboxgl.Marker({ element: el })
-          .setLngLat([fig.lng, fig.lat])
-          .addTo(map);
-
-        el.addEventListener('click', (e) => {
-          e.stopPropagation();
-          if (popupInstance) popupInstance.remove();
-          popupInstance = new mapboxgl.Popup({ offset: 25, closeButton: true })
-            .setLngLat([fig.lng, fig.lat])
-            .setHTML(
-              `<div class="popup-name">${escapeHtml(fig.name)}</div>` +
-              `<div class="popup-role">${escapeHtml(fig.role)}</div>` +
-              `<div class="popup-summary">${escapeHtml(fig.summary)}</div>`
-            )
-            .addTo(map);
-          selectFigure(fig);
-        });
-
-        el.addEventListener('mouseenter', () => {
-          if (selectedFigure && selectedFigure.id === fig.id) return;
-          if (popupInstance) popupInstance.remove();
-          popupInstance = new mapboxgl.Popup({ offset: 25, closeButton: false, closeOnClick: false })
-            .setLngLat([fig.lng, fig.lat])
-            .setHTML(`<div class="popup-name">${escapeHtml(fig.name)}</div><div class="popup-role">${escapeHtml(fig.role)}</div>`)
-            .addTo(map);
-        });
-
-        el.addEventListener('mouseleave', () => {
-          if (selectedFigure && selectedFigure.id === fig.id) return;
-          if (popupInstance) { popupInstance.remove(); popupInstance = null; }
-        });
-
-        markers.push({ fig, marker, el });
+      var anyVisible = false;
+      cards.forEach(function(card) {
+        var id = card.dataset.id;
+        var fig = figures.find(function(f) { return f.id === id; });
+        if (!fig) return;
+        var match = !q ||
+          fig.name.toLowerCase().indexOf(q) !== -1 ||
+          fig.role.toLowerCase().indexOf(q) !== -1;
+        card.style.display = match ? '' : 'none';
+        if (match) anyVisible = true;
       });
+
+      if (!anyVisible && q) {
+        var msg = document.createElement('div');
+        msg.className = 'no-results';
+        msg.textContent = 'No figures match "' + query + '"';
+        container.appendChild(msg);
+      }
     }
 
     function resetMap() {
       if (popupInstance) { popupInstance.remove(); popupInstance = null; }
       selectFigure(null);
+      document.getElementById('search-input').value = '';
+      filterFigures('');
       map.flyTo({ center: INITIAL_CENTER, zoom: INITIAL_ZOOM, speed: 0.8 });
     }
 
@@ -295,9 +402,8 @@
     function goToTourStop(idx) {
       if (idx < 0 || idx >= figures.length) return;
       tourStep = idx;
-      const fig = figures[tourStep];
-      selectFigure(fig);
-      document.getElementById('tour-step').textContent = `${tourStep + 1} / ${figures.length}`;
+      selectFigure(figures[tourStep]);
+      document.getElementById('tour-step').textContent = (tourStep + 1) + ' / ' + figures.length;
     }
 
     function exitTour() {
@@ -307,29 +413,58 @@
       resetMap();
     }
 
-    map.on('load', () => {
+    map.on('load', function() {
       map.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
       fetch(FIGURES_URL)
-        .then(r => r.json())
-        .then(data => {
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
           figures = data;
           buildFigureList();
-          addMarkers();
+          addMapLayers();
         })
-        .catch(err => console.error('Failed to load notable-figures.json', err));
+        .catch(function(err) { console.error('Failed to load notable-figures.json', err); });
 
-      document.getElementById('detail-back').addEventListener('click', () => {
+      map.on('click', 'figures-markers', function(e) {
+        if (!e.features || !e.features.length) return;
+        var id = e.features[0].properties.id;
+        var fig = figures.find(function(f) { return f.id === id; });
+        if (fig) selectFigure(fig);
+      });
+
+      map.on('mouseenter', 'figures-markers', function(e) {
+        map.getCanvas().style.cursor = 'pointer';
+        if (!e.features || !e.features.length) return;
+        var props = e.features[0].properties;
+        if (selectedFigureId === props.id) return;
+        var coords = e.features[0].geometry.coordinates.slice();
+        if (popupInstance) popupInstance.remove();
+        popupInstance = new mapboxgl.Popup({ offset: 15, closeButton: false, closeOnClick: false })
+          .setLngLat(coords)
+          .setHTML('<div class="popup-name">' + escapeHtml(props.name) + '</div><div class="popup-role">' + escapeHtml(props.role) + '</div>')
+          .addTo(map);
+      });
+
+      map.on('mouseleave', 'figures-markers', function() {
+        map.getCanvas().style.cursor = '';
+        if (popupInstance && !selectedFigureId) { popupInstance.remove(); popupInstance = null; }
+      });
+
+      document.getElementById('detail-back').addEventListener('click', function() {
         selectFigure(null);
         if (!tourActive) map.flyTo({ center: INITIAL_CENTER, zoom: INITIAL_ZOOM, speed: 0.6 });
       });
 
+      document.getElementById('search-input').addEventListener('input', function(e) {
+        filterFigures(e.target.value);
+      });
+
       document.getElementById('reset-map').addEventListener('click', resetMap);
       document.getElementById('start-tour').addEventListener('click', startTour);
-      document.getElementById('tour-next').addEventListener('click', () => {
+      document.getElementById('tour-next').addEventListener('click', function() {
         if (tourStep < figures.length - 1) goToTourStop(tourStep + 1);
       });
-      document.getElementById('tour-prev').addEventListener('click', () => {
+      document.getElementById('tour-prev').addEventListener('click', function() {
         if (tourStep > 0) goToTourStop(tourStep - 1);
       });
       document.getElementById('tour-exit').addEventListener('click', exitTour);
