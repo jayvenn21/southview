@@ -4,6 +4,8 @@
     "name": "Alonzo Franklin Herndon",
     "dates": "1858–1927",
     "role": "Entrepreneur, founder of Atlanta Life Insurance",
+    "lat": 33.7490,
+    "lng": -84.4122,
     "summary": "Born enslaved in Social Circle, Georgia. Founded Atlanta Life Insurance Company in 1905 — the largest Black-owned insurance company in the U.S. At his death, he was Atlanta's wealthiest Black citizen.",
     "facts": [
       "Born enslaved in Social Circle, Georgia",
@@ -18,6 +20,8 @@
     "name": "John Wesley Dobbs & Family",
     "dates": "1882–1961",
     "role": "Voting rights advocate, 'Mayor of Auburn Avenue'",
+    "lat": 33.7554,
+    "lng": -84.3738,
     "summary": "Coined the term 'Sweet Auburn' and led major voter registration drives in Atlanta's Black community. Grandfather of Maynard Jackson, Atlanta's first Black mayor.",
     "facts": [
       "Often called 'The Mayor of Auburn Avenue,' coined the term 'Sweet Auburn'",
@@ -33,6 +37,8 @@
     "name": "Rev. & Mrs. Martin Luther King Sr.",
     "dates": "1899–1984",
     "role": "Parents of Dr. Martin Luther King Jr.",
+    "lat": 33.7542,
+    "lng": -84.3738,
     "summary": "Pastor of Ebenezer Baptist Church for 44 years. Led a voting-rights march on Atlanta City Hall in 1936. His wife Alberta was killed while playing 'The Lord's Prayer' at Ebenezer in 1974.",
     "facts": [
       "Pastor of Ebenezer Baptist Church for 44 years",
@@ -47,6 +53,8 @@
     "name": "Rev. A. D. & Jennie Williams",
     "dates": "A.D. 1863–1931 · Jennie 1873–1941",
     "role": "Grandparents of Dr. Martin Luther King Jr.",
+    "lat": 33.7542,
+    "lng": -84.3738,
     "summary": "A.D. Williams was the second pastor of Ebenezer Baptist Church, growing it from a handful to 750+ members. Co-founded the Atlanta NAACP in 1917 and served as its first president.",
     "facts": [
       "Second pastor of Ebenezer Baptist Church — grew congregation from a handful to over 750",
@@ -61,6 +69,8 @@
     "name": "Adrienne Herndon",
     "dates": "Unknown",
     "role": "Educator and actor, wife of Alonzo Herndon",
+    "lat": 33.7490,
+    "lng": -84.4122,
     "summary": "Among the first African American faculty at Atlanta University. Made her professional acting debut in Boston in 1904. Designed the Herndon family's Diamond Hill mansion.",
     "facts": [
       "One of the first African American faculty members at Atlanta University, teaching elocution",
@@ -75,6 +85,8 @@
     "name": "Clara Maxwell Cater Pitts",
     "dates": "Unknown",
     "role": "Educator and orphanage manager",
+    "lat": 33.7347,
+    "lng": -84.4152,
     "summary": "Superintendent of the Carrie Steele Orphans Home. Modernized its operations and secured United Way funding. The orphanage was renamed in her honor in 1950.",
     "facts": [
       "Served as superintendent of the Carrie Steele Orphans Home",
@@ -89,6 +101,8 @@
     "name": "Moses Amos",
     "dates": "Unknown",
     "role": "First licensed Black pharmacist in Georgia",
+    "lat": 33.7598,
+    "lng": -84.3878,
     "summary": "In 1911 became the first African American granted a Georgia druggist license. Built Gate City Drug Store on Auburn Avenue into a hub of mentorship.",
     "facts": [
       "In June 1911 passed the Georgia State pharmacy exam — first African American granted a druggist license",
@@ -102,6 +116,8 @@
     "name": "Dinah Watts Pace",
     "dates": "1853–1933",
     "role": "Educator and orphanage founder",
+    "lat": 33.7366,
+    "lng": -84.3866,
     "summary": "Born enslaved in Athens, GA. Founded one of Georgia's earliest orphanages for African American children. Graduated from Atlanta University in 1884. Dinah Pace Road is named in her honor.",
     "facts": [
       "Born enslaved in Athens, Georgia in 1853",
@@ -116,6 +132,8 @@
     "name": "George 'Union' Wilder",
     "dates": "Unknown–1906",
     "role": "Victim of the 1906 Atlanta Race Massacre",
+    "lat": 33.6893,
+    "lng": -84.3885,
     "summary": "Union Army veteran killed defending his home during the 1906 Atlanta Race Massacre. His stand in Brownsville helped slow the rioters' momentum.",
     "facts": [
       "Union Army veteran who settled in Brownsville, Atlanta after the Civil War",
@@ -129,6 +147,8 @@
     "name": "First Lt. Walter Westmoreland",
     "dates": "Unknown–1944",
     "role": "Tuskegee Airman, Red Tail Flyer",
+    "lat": 33.7478,
+    "lng": -84.4141,
     "summary": "Morehouse College graduate who flew with the 332nd Fighter Squadron during WWII. Shot down on October 13, 1944, returning from an escort mission over Germany.",
     "facts": [
       "Graduated from Morehouse College and earned a master's from Atlanta University",
@@ -142,6 +162,8 @@
     "name": "Henry 'Hank' Aaron",
     "dates": "1934–2021",
     "role": "Baseball legend and civil rights supporter",
+    "lat": 33.7348,
+    "lng": -84.3899,
     "summary": "Broke Babe Ruth's career home run record despite death threats. Used his fame to champion civil rights. Awarded the Presidential Medal of Freedom.",
     "facts": [
       "Surpassed Babe Ruth's career home run record despite racial insults and death threats",
@@ -156,6 +178,8 @@
     "name": "Julian Bond",
     "dates": "1940–2015",
     "role": "Civil rights organizer and legislator",
+    "lat": 33.7478,
+    "lng": -84.4141,
     "summary": "SNCC co-founder, Georgia legislator, first president of the Southern Poverty Law Center, and chairman of the NAACP. His activism began as a student at Morehouse.",
     "facts": [
       "Among the first leaders of SNCC, organizing sit-ins and boycotts",
@@ -170,6 +194,8 @@
     "name": "Congressman John Lewis",
     "dates": "1940–2020",
     "role": "Civil rights leader and U.S. Congressman",
+    "lat": 33.7552,
+    "lng": -84.3903,
     "summary": "Served in U.S. House from 1987 until his death. Chairman of SNCC, one of the 'Big Six' organizers of the 1963 March on Washington. Known as 'the conscience of Congress.'",
     "facts": [
       "Served in the U.S. House for Georgia's 5th district from 1987 until his death in 2020",

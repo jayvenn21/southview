@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>South View — Historic Cemetery Navigation & History</title>
+  <title>South View Cemetery — Notable Figures</title>
   <link rel="icon" href="cemelogo.png" type="image/png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
@@ -11,308 +11,113 @@
   <script src="https://api.mapbox.com/mapbox-gl-js/v3.8.0/mapbox-gl.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { touch-action: pan-x pan-y; height: 100%; overflow: hidden; font-family: "Source Serif 4", Georgia, serif; background: #fff; color: #1a1a1a; }
+    html, body { height: 100%; overflow: hidden; font-family: "Source Serif 4", Georgia, serif; background: #fff; color: #1a1a1a; }
     .app { display: flex; height: 100vh; width: 100%; }
+
     .sidebar {
-      width: 320px;
-      min-width: 280px;
-      background: #fff;
+      width: 360px; min-width: 300px; background: #fff;
       border-right: 1px solid #e8e4df;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      flex-shrink: 0;
+      display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0;
     }
     .sidebar-header {
-      padding: 20px 24px 16px;
-      border-bottom: 1px solid #e8e4df;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-shrink: 0;
+      padding: 20px 24px 16px; border-bottom: 1px solid #e8e4df;
+      display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
     }
     .site-logo { height: 40px; width: auto; display: block; }
-    .staff-link { font-size: 12px; color: #b76e79; font-weight: 600; text-decoration: none; }
-    .staff-link:hover { text-decoration: underline; }
     .sidebar-body { flex: 1; overflow-y: auto; padding: 14px 18px 18px; }
-    .search-wrap { margin-bottom: 14px; }
-    .search-wrap input {
-      width: 100%;
-      padding: 8px 12px;
-      font-size: 14px;
-      font-family: "Source Serif 4", Georgia, serif;
-      border: 1px solid #e8e4df;
-      border-radius: 10px;
-      background: #faf9f7;
-      color: #1a1a1a;
+
+    .section-title {
+      font-size: 11px; font-weight: 700; color: #6b5d4a;
+      text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 12px;
     }
-    .search-wrap input::placeholder { color: #888; }
-    .search-wrap input:focus { outline: none; border-color: #b76e79; background: #fff; }
-    .filters-section { margin-bottom: 14px; }
-    .filters-section label { display: block; font-size: 11px; color: #6b5d4a; margin-bottom: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
-    .filters-section select {
-      width: 100%;
-      padding: 6px 10px;
-      font-size: 13px;
-      font-family: "Source Serif 4", Georgia, serif;
-      border: 1px solid #e8e4df;
-      border-radius: 8px;
-      background: #faf9f7;
-      color: #1a1a1a;
-      margin-bottom: 8px;
+
+    .figure-list { display: flex; flex-direction: column; gap: 6px; }
+    .figure-card {
+      padding: 12px 14px; background: #faf9f7; border-radius: 10px;
+      cursor: pointer; border: 2px solid transparent;
+      transition: border-color 0.15s, background 0.15s;
     }
-    .filters-section select:focus { outline: none; border-color: #b76e79; }
-    .filters-row { display: flex; gap: 8px; margin-bottom: 8px; }
-    .filters-row select { flex: 1; margin-bottom: 0; }
-    .more-filters-toggle {
-      background: none;
-      border: none;
-      color: #b76e79;
-      font-size: 13px;
-      font-family: "Source Serif 4", Georgia, serif;
-      font-weight: 600;
-      cursor: pointer;
-      padding: 4px 0;
-      margin-bottom: 12px;
+    .figure-card:hover { background: #f5f0e8; border-color: #e8e4df; }
+    .figure-card.active { border-color: #b76e79; background: #fdf6f0; }
+    .figure-card .fc-name { font-size: 14px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+    .figure-card .fc-role { font-size: 11px; color: #b76e79; font-weight: 600; }
+
+    .detail-panel { display: none; flex-direction: column; gap: 12px; }
+    .detail-panel.visible { display: flex; }
+    .detail-back {
+      background: none; border: none; color: #b76e79; font-size: 13px;
+      font-family: "Source Serif 4", Georgia, serif; font-weight: 600;
+      cursor: pointer; padding: 0; text-align: left;
     }
-    .more-filters-toggle:hover { text-decoration: underline; }
-    .more-filters { display: none; margin-bottom: 16px; }
-    .more-filters.open { display: block; }
-    .less-filters-toggle { margin-top: 12px; margin-bottom: 0; }
-    .filter-link {
-      background: none;
-      border: none;
-      color: #b76e79;
-      font-size: 13px;
-      font-family: "Source Serif 4", Georgia, serif;
-      font-weight: 600;
-      cursor: pointer;
-      padding: 4px 0;
-      margin-bottom: 20px;
+    .detail-back:hover { text-decoration: underline; }
+    .detail-name { font-size: 24px; font-weight: 700; line-height: 1.3; }
+    .detail-dates { font-size: 14px; color: #6b5d4a; margin-bottom: 4px; }
+    .detail-role { font-size: 13px; color: #b76e79; font-weight: 600; margin-bottom: 8px; }
+    .detail-summary { font-size: 14px; line-height: 1.7; color: #444; margin-bottom: 12px; }
+    .detail-facts-title {
+      font-size: 11px; font-weight: 700; color: #6b5d4a;
+      text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px;
     }
-    .filter-link:hover { text-decoration: underline; }
-    .filter-links-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 14px;
+    .detail-facts { margin: 0; padding-left: 18px; }
+    .detail-facts li { font-size: 13px; line-height: 1.7; color: #333; margin-bottom: 6px; }
+    .detail-directions {
+      display: inline-block; margin-top: 12px; padding: 10px 18px;
+      font-size: 13px; font-family: "Source Serif 4", Georgia, serif;
+      background: #1a1a1a; color: #fff; border-radius: 10px;
+      font-weight: 600; text-decoration: none;
     }
-    .filter-links-row-inside { margin-bottom: 0; margin-top: 8px; }
-    .list-panel-title { font-size: 11px; font-weight: 700; color: #6b5d4a; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
-    .list-panel-list { display: flex; flex-direction: column; gap: 5px; }
-    .list-panel-item {
-      padding: 9px 12px;
-      background: #faf9f7;
-      border-radius: 10px;
-      cursor: pointer;
-      font-size: 13px;
-      color: #1a1a1a;
-      border: 1px solid transparent;
-      transition: background 0.15s, border-color 0.15s;
-    }
-    .list-panel-item:hover { background: #f5f0e8; border-color: #e8e4df; }
-    .list-panel-item strong { display: block; font-size: 14px; margin-bottom: 1px; }
-    .list-panel-item span { color: #6b5d4a; font-size: 11px; }
-    .selected-burial {
-      display: none;
-      flex-direction: column;
-      gap: 16px;
-    }
-    .selected-burial.visible { display: flex; }
-    .selected-burial .back-to-list {
-      background: none;
-      border: none;
-      color: #b76e79;
-      font-size: 13px;
-      font-family: "Source Serif 4", Georgia, serif;
-      font-weight: 600;
-      cursor: pointer;
-      padding: 0;
-      margin-bottom: 8px;
-      text-align: left;
-    }
-    .selected-burial .back-to-list:hover { text-decoration: underline; }
-    .selected-burial .detail-name { font-size: 22px; font-weight: 700; color: #1a1a1a; line-height: 1.3; margin-bottom: 8px; }
-    .selected-burial .detail-meta { font-size: 14px; color: #6b5d4a; margin-bottom: 16px; line-height: 1.8; }
-    .selected-burial .detail-meta p { margin-bottom: 4px; }
-    .selected-burial .detail-bio { font-size: 14px; line-height: 1.6; color: #444; font-style: italic; margin-bottom: 16px; }
-    .selected-burial .detail-related { margin-top: 8px; }
-    .selected-burial .detail-related h4 { font-size: 12px; font-weight: 700; color: #6b5d4a; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
-    .selected-burial .detail-related ul { list-style: none; }
-    .selected-burial .detail-related li { margin-bottom: 6px; }
-    .selected-burial .detail-related a { color: #b76e79; font-weight: 600; text-decoration: none; font-size: 14px; }
-    .selected-burial .detail-related a:hover { text-decoration: underline; }
-    .selected-burial .get-directions-link {
-      display: inline-block;
-      margin-top: 10px;
-      padding: 9px 16px;
-      font-size: 13px;
-      font-family: "Source Serif 4", Georgia, serif;
-      background: #1a1a1a;
-      color: #fff;
-      border-radius: 10px;
-      font-weight: 600;
-      text-decoration: none;
-    }
-    .selected-burial .get-directions-link:hover { background: #333; color: #fff; }
-    .selected-burial .detail-notes { font-size: 14px; line-height: 1.6; color: #444; background: #faf9f7; border-left: 3px solid #b76e79; padding: 8px 12px; border-radius: 6px; margin-bottom: 8px; }
-    .map-info-panel {
-      position: absolute;
-      top: 12px;
-      left: 12px;
-      z-index: 3;
-    }
-    .map-info-toggle {
-      background: #fff;
-      border: 1px solid #e8e4df;
-      border-radius: 10px;
-      padding: 6px 12px;
-      font-size: 12px;
-      font-family: "Source Serif 4", Georgia, serif;
-      font-weight: 600;
-      color: #6b5d4a;
-      cursor: pointer;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-    }
-    .map-info-toggle:hover { border-color: #b76e79; color: #b76e79; }
-    .map-info-card {
-      display: none;
-      margin-top: 6px;
-      background: #fff;
-      border: 1px solid #e8e4df;
-      border-radius: 10px;
-      padding: 14px 16px;
-      max-width: 290px;
-      font-size: 12px;
-      line-height: 1.6;
-      color: #444;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    .map-info-card.open { display: block; }
-    .map-info-card h4 { font-size: 13px; font-weight: 700; color: #1a1a1a; margin-bottom: 8px; }
-    .map-info-card ul { margin: 0; padding-left: 16px; }
-    .map-info-card li { margin-bottom: 4px; }
-    .map-info-card .info-close { background: none; border: none; color: #b76e79; font-size: 12px; font-weight: 600; cursor: pointer; padding: 0; margin-top: 8px; font-family: "Source Serif 4", Georgia, serif; }
-    .map-info-card .info-close:hover { text-decoration: underline; }
-    .historical-section {
-      border-top: 1px solid #e8e4df;
-      margin-top: 14px;
-      padding-top: 14px;
-    }
-    .historical-section h4 { font-size: 11px; font-weight: 700; color: #6b5d4a; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 10px; }
-    .historical-section .hist-item { background: #faf9f7; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; cursor: pointer; border: 1px solid transparent; transition: border-color 0.15s; }
-    .historical-section .hist-item:hover { border-color: #e8e4df; }
-    .historical-section .hist-item strong { display: block; font-size: 13px; color: #1a1a1a; margin-bottom: 2px; }
-    .historical-section .hist-item .hist-role { font-size: 11px; color: #b76e79; font-weight: 600; display: block; margin-bottom: 4px; }
-    .historical-section .hist-item .hist-summary { font-size: 12px; color: #6b5d4a; line-height: 1.5; }
-    .historical-section .hist-facts { display: none; margin-top: 8px; padding-top: 8px; border-top: 1px solid #e8e4df; }
-    .historical-section .hist-facts.open { display: block; }
-    .historical-section .hist-facts ul { margin: 0; padding-left: 16px; }
-    .historical-section .hist-facts li { font-size: 12px; color: #444; line-height: 1.6; margin-bottom: 4px; }
-    .list-view-wrap { display: block; }
-    .list-view-wrap.hidden { display: none !important; }
-    .map-wrap {
-      flex: 1;
-      position: relative;
-      min-width: 0;
-    }
-    #map {
-      position: absolute;
-      inset: 0;
-      min-height: 400px;
-      touch-action: none;
-    }
+    .detail-directions:hover { background: #333; }
+
+    .map-wrap { flex: 1; position: relative; min-width: 0; }
+    #map { position: absolute; inset: 0; min-height: 400px; }
+
     .map-actions {
-      position: absolute;
-      bottom: 28px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 2;
-      display: flex;
-      align-items: center;
-      gap: 14px;
+      position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%);
+      z-index: 2; display: flex; align-items: center; gap: 14px;
     }
     .map-actions button {
-      padding: 10px 20px;
-      font-size: 14px;
-      font-family: "Source Serif 4", Georgia, serif;
-      font-weight: 600;
-      border: none;
-      border-radius: 12px;
-      cursor: pointer;
+      padding: 10px 20px; font-size: 14px;
+      font-family: "Source Serif 4", Georgia, serif; font-weight: 600;
+      border: none; border-radius: 12px; cursor: pointer;
       transition: background 0.2s, transform 0.1s;
     }
-    .btn-reset { background: #faf9f7; color: #1a1a1a; border: 1px solid #e8e4df; }
-    .btn-reset:hover { background: #f0ebe3; transform: translateY(-1px); }
+    .btn-reset { background: #fff; color: #1a1a1a; border: 1px solid #e8e4df !important; }
+    .btn-reset:hover { background: #f5f0e8; }
     .btn-tour { background: #1a1a1a; color: #fff; }
-    .btn-tour:hover { background: #333; transform: translateY(-1px); }
+    .btn-tour:hover { background: #333; }
+
     .tour-controls {
-      position: absolute;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 2;
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
+      position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%);
+      z-index: 2; display: none; align-items: center; gap: 12px;
+      background: #1a1a1a; color: #fff; padding: 12px 20px; border-radius: 14px;
     }
     .tour-controls.visible { display: flex; }
-    .tour-controls .tour-progress-bar { width: 220px; height: 6px; background: rgba(0,0,0,0.12); border-radius: 3px; overflow: hidden; }
-    .tour-controls .tour-progress-fill { height: 100%; background: #b76e79; border-radius: 3px; transition: width 0.2s ease; }
-    .tour-controls .tour-step-text { font-size: 14px; color: #1a1a1a; font-weight: 600; }
-    .tour-controls .tour-nav-row { display: flex; align-items: center; gap: 10px; }
-    .tour-controls .tour-nav-row button {
-      padding: 12px 20px;
-      font-size: 14px;
-      font-family: "Source Serif 4", Georgia, serif;
-      font-weight: 600;
-      border-radius: 10px;
-      cursor: pointer;
-      border: none;
+    .tour-controls button {
+      background: #fff; color: #1a1a1a; border: none; border-radius: 8px;
+      padding: 6px 14px; font-size: 13px; font-family: "Source Serif 4", Georgia, serif;
+      font-weight: 600; cursor: pointer;
     }
-    .tour-controls #tour-prev, .tour-controls #tour-next { background: #1a1a1a; color: #fff; }
-    .tour-controls #tour-prev:hover, .tour-controls #tour-next:hover { background: #333; }
-    .tour-controls #tour-exit { background: #faf9f7; color: #6b5d4a; border: 1px solid #e8e4df; }
-    .tour-controls #tour-exit:hover { background: #f0ebe3; }
-    .tour-callout {
-      position: absolute;
-      bottom: 100px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 1;
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      max-width: 90%;
-      padding: 16px 20px;
-      background: #1a1a1a;
-      color: #fff;
-      border-radius: 12px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.2);
-      font-size: 14px;
-      line-height: 1.4;
+    .tour-step-text { font-size: 13px; font-weight: 600; min-width: 60px; text-align: center; }
+
+    .figure-marker {
+      width: 32px; height: 32px; background: #b76e79; border: 3px solid #fff;
+      border-radius: 50%; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+      transition: transform 0.2s;
     }
-    .tour-callout.hidden { display: none !important; }
-    .tour-callout-icon { font-size: 20px; font-weight: 700; color: #b76e79; flex-shrink: 0; }
+    .figure-marker:hover { transform: scale(1.2); }
+    .figure-marker.active {
+      background: #C19A6B; border-color: #fff; transform: scale(1.3);
+      box-shadow: 0 0 0 6px rgba(193,154,107,0.3), 0 2px 8px rgba(0,0,0,0.25);
+    }
+
     .mapboxgl-popup-content {
-      padding: 18px;
-      min-width: 240px;
-      max-height: 30vh;
-      overflow-y: auto;
-      border-radius: 12px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.12);
-      border: 1px solid #e8e4df;
-      background: #fff;
+      padding: 14px 16px; min-width: 200px; border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.12); border: 1px solid #e8e4df;
+      font-family: "Source Serif 4", Georgia, serif;
     }
-    .popup-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; color: #1a1a1a; }
-    .popup-meta { font-size: 12px; color: #6b5d4a; margin-bottom: 10px; line-height: 1.4; }
-    .popup-related { margin-top: 12px; padding-top: 10px; border-top: 1px solid #e8e4df; font-size: 12px; }
-    .popup-related ul { margin: 6px 0 0; padding-left: 18px; }
-    .popup-related-link { color: #b76e79; text-decoration: none; font-weight: 600; }
-    .popup-related-link:hover { text-decoration: underline; }
-    .popup-tags { margin-top: 8px; }
-    .popup-tag { display: inline-block; background: #f0ebe3; color: #1a1a1a; padding: 2px 8px; border-radius: 6px; font-size: 11px; margin-right: 4px; }
+    .popup-name { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+    .popup-role { font-size: 12px; color: #b76e79; font-weight: 600; margin-bottom: 6px; }
+    .popup-summary { font-size: 12px; color: #555; line-height: 1.5; }
   </style>
 </head>
 <body>
@@ -320,108 +125,35 @@
     <aside class="sidebar">
       <div class="sidebar-header">
         <img src="cemelogo.png" alt="South View Cemetery" class="site-logo">
-        <a href="https://forms.gle/oExirtBkM2D2BWVD7" target="_blank" rel="noopener" class="staff-link">Submit Grave Info</a>
       </div>
       <div class="sidebar-body">
-        <div class="search-wrap">
-          <input type="text" id="search-name" placeholder="Search by name…" aria-label="Search by name">
+        <div id="list-view">
+          <div class="section-title">Notable Figures at South-View</div>
+          <div class="figure-list" id="figure-list"></div>
         </div>
-        <div class="filters-section">
-          <label>Gender</label>
-          <select id="filter-gender">
-            <option value="">All</option>
-          </select>
-          <label>Section</label>
-          <select id="filter-section">
-            <option value="">All</option>
-          </select>
-          <label>Birth year range</label>
-          <div class="filters-row">
-            <select id="filter-birth-year-from">
-              <option value="">From</option>
-            </select>
-            <select id="filter-birth-year-to">
-              <option value="">To</option>
-            </select>
-          </div>
-          <div class="filter-links-row" id="filter-links-row-top">
-            <button type="button" class="more-filters-toggle" id="more-filters-toggle">More filters</button>
-            <button type="button" class="filter-link clear-filters-btn" id="clear-filters">Clear filters</button>
-          </div>
-          <div class="more-filters" id="more-filters">
-            <label>Funeral home</label>
-            <select id="filter-funeral">
-              <option value="">All</option>
-            </select>
-            <label>Grave type</label>
-            <select id="filter-grave-type">
-              <option value="">All</option>
-            </select>
-            <div class="filter-links-row filter-links-row-inside">
-              <button type="button" class="more-filters-toggle" id="less-filters-toggle">Less filters</button>
-              <button type="button" class="filter-link clear-filters-btn" id="clear-filters-inside">Clear filters</button>
-            </div>
-          </div>
-        </div>
-        <div class="list-view-wrap" id="list-view-wrap">
-          <div class="list-panel-title">Burials</div>
-          <div class="list-panel-list" id="list-panel-list"></div>
-        </div>
-        <div class="selected-burial" id="selected-burial">
-          <button type="button" class="back-to-list" id="back-to-list">← Back to list</button>
+        <div class="detail-panel" id="detail-panel">
+          <button type="button" class="detail-back" id="detail-back">← All figures</button>
           <div class="detail-name" id="detail-name"></div>
-          <div class="detail-meta" id="detail-meta"></div>
-          <div class="detail-notes" id="detail-notes" style="display:none;"></div>
-          <div class="detail-bio" id="detail-bio"></div>
-          <div class="detail-related" id="detail-related"></div>
-          <a id="get-directions-link" href="#" target="_blank" rel="noopener" class="get-directions-link" style="display:none;">Get Directions</a>
-        </div>
-        <div class="historical-section" id="historical-section">
-          <h4>Notable Figures at South-View</h4>
-          <div id="notable-figures-list"></div>
+          <div class="detail-dates" id="detail-dates"></div>
+          <div class="detail-role" id="detail-role"></div>
+          <div class="detail-summary" id="detail-summary"></div>
+          <div class="detail-facts-title">Key Facts</div>
+          <ul class="detail-facts" id="detail-facts"></ul>
+          <a id="detail-directions" href="#" target="_blank" rel="noopener" class="detail-directions">Get Directions</a>
         </div>
       </div>
     </aside>
     <div class="map-wrap">
       <div id="map"></div>
-      <div class="map-info-panel">
-        <button type="button" class="map-info-toggle" id="map-info-toggle">? About this map</button>
-        <div class="map-info-card" id="map-info-card">
-          <h4>How to read the map</h4>
-          <ul>
-            <li><strong>Brown dots</strong> — individual burial locations with known coordinates.</li>
-            <li><strong>Numbered circles</strong> — clusters of nearby graves. Click to zoom in and expand.</li>
-            <li><strong>Rose-colored dots</strong> — graves that share coordinates with others (exact plot location unknown).</li>
-            <li><strong>Gold dot with white halo</strong> — the burial you currently have selected.</li>
-          </ul>
-          <h4 style="margin-top:10px;">Explorer Mode</h4>
-          <p>Walks you through a random selection of burials across the cemetery. Each session picks a different set so you can discover new stories every time.</p>
-          <button type="button" class="info-close" id="map-info-close">Close</button>
-        </div>
-      </div>
-      <div id="tour-callout" class="tour-callout hidden">
-        <span class="tour-callout-icon">·</span>
-        <span id="tour-callout-text"></span>
-      </div>
       <div class="map-actions" id="map-actions">
         <button type="button" class="btn-reset" id="reset-map">Reset map</button>
-        <select id="explorer-count" title="Number of stops" style="padding:8px 10px;font-size:13px;font-family:'Source Serif 4',Georgia,serif;border:1px solid #e8e4df;border-radius:10px;background:#fff;color:#1a1a1a;cursor:pointer;">
-          <option value="10">10 stops</option>
-          <option value="20" selected>20 stops</option>
-          <option value="50">50 stops</option>
-          <option value="100">100 stops</option>
-          <option value="all">All</option>
-        </select>
-        <button type="button" class="btn-tour" id="start-tour">Start Explorer Mode</button>
+        <button type="button" class="btn-tour" id="start-tour">Start Guided Tour</button>
       </div>
       <div class="tour-controls" id="tour-controls">
-        <div class="tour-progress-bar" aria-hidden="true"><div class="tour-progress-fill" id="tour-progress-fill" style="width:0%"></div></div>
-        <span id="tour-step" class="tour-step-text">1 / 4</span>
-        <div class="tour-nav-row">
-          <button type="button" id="tour-prev">← Prev</button>
-          <button type="button" id="tour-next">Next →</button>
-          <button type="button" id="tour-exit">Exit Explorer</button>
-        </div>
+        <button type="button" id="tour-prev">← Prev</button>
+        <span id="tour-step" class="tour-step-text">1 / 13</span>
+        <button type="button" id="tour-next">Next →</button>
+        <button type="button" id="tour-exit">Exit Tour</button>
       </div>
     </div>
   </div>
@@ -430,882 +162,177 @@
   <script>
     mapboxgl.accessToken = typeof MAPBOX_ACCESS_TOKEN !== 'undefined' ? MAPBOX_ACCESS_TOKEN : '';
 
-    const GRAVES_DATA_URL = 'data/graves.json';
+    const FIGURES_URL = 'data/notable-figures.json';
+    const INITIAL_CENTER = [-84.3900, 33.7450];
+    const INITIAL_ZOOM = 12.5;
 
-    const INITIAL_VIEW = {
-      center: [-84.3731, 33.7019],
-      zoom: 15.4,
-      pitch: 0,
-      bearing: 0
-    };
+    let figures = [];
+    let markers = [];
+    let selectedFigure = null;
+    let tourActive = false;
+    let tourStep = 0;
+    let popupInstance = null;
 
-    let graves = [];
-    let gravesWithCoords = [];
     const map = new mapboxgl.Map({
       container: 'map',
       style: 'mapbox://styles/mapbox/streets-v12',
-      center: INITIAL_VIEW.center,
-      zoom: INITIAL_VIEW.zoom,
-      pitch: INITIAL_VIEW.pitch,
-      bearing: INITIAL_VIEW.bearing
+      center: INITIAL_CENTER,
+      zoom: INITIAL_ZOOM,
+      minZoom: 10,
+      maxZoom: 19
     });
-
-    map.setMinZoom(14);
-    map.setMaxZoom(19);
-    const DISABLE_PINCH_ZOOM = false;
-    map.once('load', () => {
-      map.jumpTo(INITIAL_VIEW);
-      if (DISABLE_PINCH_ZOOM) {
-        map.touchZoomRotate.disableRotation();
-        map.touchZoomRotate.disable();
-      }
-    });
-
-    function resetMapView() {
-      map.easeTo(INITIAL_VIEW);
-    }
-
-    map.on('error', (e) => {
-      console.error('Mapbox error:', e);
-      document.body.insertAdjacentHTML('afterbegin',
-        '<div style="position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#c00;color:#fff;padding:12px 24px;border-radius:8px;z-index:9999;font-size:14px;">Map failed to load. Check token & allow localhost at account.mapbox.com</div>');
-    });
-
-    const COORD_PRECISION = 1e5;
-    function roundCoordKey(lat, lng) {
-      return Math.round(lat * COORD_PRECISION) / COORD_PRECISION + ',' + Math.round(lng * COORD_PRECISION) / COORD_PRECISION;
-    }
-    function buildGravesGeojson(graveList) {
-      const withCoords = graveList.filter(g => g.lat != null && g.lng != null);
-      const byKey = {};
-      withCoords.forEach(g => {
-        const key = roundCoordKey(g.lat, g.lng);
-        if (!byKey[key]) byKey[key] = { lng: g.lng, lat: g.lat, ids: [] };
-        byKey[key].ids.push(g.id);
-      });
-      return {
-        type: 'FeatureCollection',
-        features: Object.values(byKey).map(({ lng, lat, ids }) => ({
-          type: 'Feature',
-          geometry: { type: 'Point', coordinates: [lng, lat] },
-          properties: { ids: JSON.stringify(ids), count: ids.length }
-        }))
-      };
-    }
-
-    function getCountAtLocation(grave) {
-      if (!grave || grave.lat == null || grave.lng == null) return 0;
-      const key = roundCoordKey(grave.lat, grave.lng);
-      return filteredGraves.filter(g => g.lat != null && g.lng != null && roundCoordKey(g.lat, g.lng) === key).length;
-    }
-
-    let currentRandomIndex = 0;
-    let popupInstance = null;
-    let filteredGraves = [];
-    let tourActive = false;
-    let tourStep = 0;
-    let tourPathGraves = [];
-    let selectedGrave = null;
-
-    function shuffleArray(arr) {
-      const a = arr.slice();
-      for (let i = a.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [a[i], a[j]] = [a[j], a[i]];
-      }
-      return a;
-    }
-    let selectedMarkerPulseInterval = null;
-
-    function formatDate(str) {
-      if (!str || str.length < 10) return null;
-      const d = new Date(str + 'T12:00:00');
-      if (isNaN(d.getTime())) return str.slice(0, 10);
-      return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-    }
-
-    function relatedScore(a, b) {
-      let score = 0;
-      const aLast = (a.lastName || '').trim().toLowerCase();
-      const bLast = (b.lastName || '').trim().toLowerCase();
-      if (aLast && bLast && aLast === bLast) score += 5;
-      const aSection = a.locationString || '';
-      const bSection = b.locationString || '';
-      if (aSection && bSection && aSection === bSection) score += 3;
-      const aLot = (a.lot != null && a.lot !== '') ? String(a.lot).trim() : '';
-      const bLot = (b.lot != null && b.lot !== '') ? String(b.lot).trim() : '';
-      if (aLot && bLot && aLot === bLot) score += 4;
-      const aFuneral = a.funeralHome || '';
-      const bFuneral = b.funeralHome || '';
-      if (aFuneral && bFuneral && aFuneral === bFuneral) score += 1;
-      const aYear = a.serviceYear != null ? a.serviceYear : (a.deathYear != null ? a.deathYear : null);
-      const bYear = b.serviceYear != null ? b.serviceYear : (b.deathYear != null ? b.deathYear : null);
-      if (aYear != null && bYear != null && Math.abs(aYear - bYear) <= 1) score += 1;
-      return score;
-    }
-
-    function getRelated(grave, limit) {
-      const withCoords = graves.filter(g => g.id !== grave.id && g.lat != null && g.lng != null);
-      const scored = withCoords.map(g => ({ g, score: relatedScore(grave, g) })).filter(x => x.score > 0);
-      scored.sort((a, b) => b.score - a.score);
-      return scored.slice(0, limit || 5).map(x => x.g);
-    }
-
-    function createPopupHTML(g) {
-      const name = (g.fullName || [g.firstName, g.middleName, g.lastName].filter(Boolean).join(' ')).trim();
-      const born = g.birthDate ? formatDate(g.birthDate) : null;
-      const died = g.deathDate ? formatDate(g.deathDate) : null;
-      const service = g.serviceDate ? formatDate(g.serviceDate) : null;
-      const ageStr = g.age != null ? `Age: ${g.age}` : '';
-      const parts = [];
-      if (born) parts.push(`Born: ${escapeHtml(born)}`);
-      if (died) parts.push(`Died: ${escapeHtml(died)}`);
-      if (service) parts.push(`Service: ${escapeHtml(service)}`);
-      if (ageStr) parts.push(ageStr);
-      if (g.gender) parts.push(`Gender: ${escapeHtml(g.gender)}`);
-      if (g.locationString) parts.push(`Section: ${escapeHtml(g.locationString)}`);
-      parts.push('Exact location: ' + (getCountAtLocation(g) >= 2 ? 'Unknown' : 'Known'));
-      if (g.funeralHome) parts.push(`Funeral home: ${escapeHtml(g.funeralHome)}`);
-      if (g.graveType) parts.push(`Grave type: ${escapeHtml(g.graveType)}`);
-      const metaHtml = parts.length ? `<div class="popup-meta">${parts.join('<br>')}</div>` : '';
-      const related = getRelated(g, 4);
-      let relatedHtml = '';
-      if (related.length > 0) {
-        relatedHtml = '<div class="popup-related"><strong>Related burials</strong><ul>' +
-          related.map(r => `<li><a href="#" data-id="${r.id}" class="popup-related-link">${escapeHtml((r.fullName || (r.firstName + ' ' + (r.lastName || '')).trim()))}</a></li>`).join('') +
-          '</ul></div>';
-      }
-      const tagsHtml = (g.tags && g.tags.length) ? `<div class="popup-tags">${g.tags.map(t => `<span class="popup-tag">${escapeHtml(t)}</span>`).join(' ')}</div>` : '';
-      return `
-        <div class="popup-content">
-          <div class="popup-title">${escapeHtml(name)}</div>
-          ${metaHtml}
-          ${tagsHtml}
-          ${relatedHtml}
-        </div>
-      `;
-    }
-
-    function createPopupHTMLForMultiple(gravesAtLocation) {
-      const listHtml = gravesAtLocation.map(g => {
-        const name = (g.fullName || [g.firstName, g.middleName, g.lastName].filter(Boolean).join(' ')).trim();
-        return `<li><a href="#" data-id="${g.id}" class="popup-related-link">${escapeHtml(name)}</a></li>`;
-      }).join('');
-      return `
-        <div class="popup-content">
-          <div class="popup-title">Multiple burials at this section</div>
-          <div class="popup-meta">Exact location unknown.</div>
-          <div class="popup-related"><strong>Select a burial:</strong><ul>${listHtml}</ul></div>
-        </div>
-      `;
-    }
 
     function escapeHtml(s) {
-      const div = document.createElement('div');
-      div.textContent = s;
-      return div.innerHTML;
+      const d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
     }
 
-    function openPopupForGrave(grave) {
-      if (popupInstance) popupInstance.remove();
-      if (!grave || grave.lat == null || grave.lng == null) return;
-      popupInstance = new mapboxgl.Popup({ offset: 25, closeButton: true })
-        .setLngLat([grave.lng, grave.lat])
-        .setHTML(createPopupHTML(grave))
-        .addTo(map);
-      map.flyTo({ center: [grave.lng, grave.lat], zoom: GRAVE_ZOOM_CLOSE, speed: 0.5, curve: 1.2, essential: true });
-      popupInstance.on('open', () => {
-        const container = popupInstance.getElement();
-        container.querySelectorAll('.popup-related-link').forEach(a => {
-          a.addEventListener('click', (e) => {
-            e.preventDefault();
-            const id = parseInt(a.dataset.id, 10);
-            const g = graves.find(x => x.id === id);
-            if (g) selectGrave(g);
-          });
-        });
-      });
-    }
+    function selectFigure(fig) {
+      selectedFigure = fig;
+      const listView = document.getElementById('list-view');
+      const detailPanel = document.getElementById('detail-panel');
 
-    const GRAVE_ZOOM_CLOSE = 17.7;
-    const GRAVE_ZOOM_PAN = 16;
+      markers.forEach(m => m.el.classList.remove('active'));
+      document.querySelectorAll('.figure-card').forEach(c => c.classList.remove('active'));
 
-    function updateSelectedMarker(grave) {
-      if (selectedMarkerPulseInterval) {
-        clearInterval(selectedMarkerPulseInterval);
-        selectedMarkerPulseInterval = null;
-      }
-      if (!map.getSource) return;
-      const src = map.getSource('selected-grave');
-      if (!src) return;
-      if (!grave || grave.lat == null || grave.lng == null) {
-        src.setData({ type: 'FeatureCollection', features: [] });
-        return;
-      }
-      src.setData({
-        type: 'Feature',
-        properties: {},
-        geometry: { type: 'Point', coordinates: [grave.lng, grave.lat] }
-      });
-      if (map.getLayer('selected-grave-halo')) {
-        let opacity = 0.35;
-        selectedMarkerPulseInterval = setInterval(() => {
-          opacity = opacity === 0.35 ? 0.6 : 0.35;
-          try { map.setPaintProperty('selected-grave-halo', 'circle-opacity', opacity); } catch (_) {}
-        }, 600);
-      }
-    }
-
-    function flyToGrave(grave) {
-      if (!grave || grave.lat == null || grave.lng == null) return;
-      map.easeTo({
-        center: [grave.lng, grave.lat],
-        zoom: GRAVE_ZOOM_PAN,
-        duration: 800
-      });
-      setTimeout(() => {
-        map.easeTo({
-          center: [grave.lng, grave.lat],
-          zoom: GRAVE_ZOOM_CLOSE,
-          duration: 600
-        });
-      }, 300);
-    }
-
-    function selectGrave(grave) {
-      if (popupInstance) popupInstance.remove();
-      setHoveredGrave(null);
-      selectedGrave = grave;
-      updateSelectedMarker(grave);
-      const listWrap = document.getElementById('list-view-wrap');
-      const detailPanel = document.getElementById('selected-burial');
-      if (!grave) {
-        listWrap.classList.remove('hidden');
+      if (!fig) {
+        listView.style.display = '';
         detailPanel.classList.remove('visible');
         return;
       }
-      listWrap.classList.add('hidden');
+
+      listView.style.display = 'none';
       detailPanel.classList.add('visible');
-      const name = (grave.fullName || [grave.firstName, grave.middleName, grave.lastName].filter(Boolean).join(' ')).trim();
-      const born = grave.birthDate ? formatDate(grave.birthDate) : null;
-      const died = grave.deathDate ? formatDate(grave.deathDate) : null;
-      const service = grave.serviceDate ? formatDate(grave.serviceDate) : null;
-      const metaLines = [];
-      if (born) metaLines.push('<p><strong>Born:</strong> ' + escapeHtml(born) + '</p>');
-      if (died) metaLines.push('<p><strong>Died:</strong> ' + escapeHtml(died) + '</p>');
-      if (service) metaLines.push('<p><strong>Service:</strong> ' + escapeHtml(service) + '</p>');
-      if (grave.age != null) metaLines.push('<p><strong>Age:</strong> ' + escapeHtml(String(grave.age)) + '</p>');
-      if (grave.gender) {
-        const gNorm = normalizeGender(grave.gender);
-        const gLabel = GENDER_OPTIONS.find(o => o.value === gNorm);
-        metaLines.push('<p><strong>Gender:</strong> ' + escapeHtml(gLabel ? gLabel.label : grave.gender) + '</p>');
-      }
-      if (grave.locationString) metaLines.push('<p><strong>Section:</strong> ' + escapeHtml(grave.locationString) + '</p>');
-      metaLines.push('<p><strong>Exact location:</strong> ' + (getCountAtLocation(grave) >= 2 ? 'Unknown' : 'Known') + '</p>');
-      if (grave.funeralHome) metaLines.push('<p><strong>Funeral home:</strong> ' + escapeHtml(grave.funeralHome) + '</p>');
-      document.getElementById('detail-name').textContent = name;
-      document.getElementById('detail-meta').innerHTML = metaLines.length ? metaLines.join('') : '';
-      const notesEl = document.getElementById('detail-notes');
-      if (grave.notes) {
-        notesEl.textContent = grave.notes;
-        notesEl.style.display = '';
-      } else {
-        notesEl.textContent = '';
-        notesEl.style.display = 'none';
-      }
-      const bioEl = document.getElementById('detail-bio');
-      if (grave.tourTag) {
-        bioEl.textContent = 'This burial is part of the ' + grave.tourTag + ' tour.';
-        bioEl.style.display = '';
-      } else {
-        bioEl.textContent = '';
-        bioEl.style.display = 'none';
-      }
-      const related = getRelated(grave, 5);
-      const relatedEl = document.getElementById('detail-related');
-      if (related.length > 0) {
-        relatedEl.innerHTML = '<h4>Related burials</h4><ul>' +
-          related.map(r => {
-            const rName = (r.fullName || [r.firstName, r.lastName].filter(Boolean).join(' ')).trim();
-            return '<li><a href="#" data-id="' + r.id + '" class="detail-related-link">' + escapeHtml(rName) + '</a></li>';
-          }).join('') + '</ul>';
-        relatedEl.querySelectorAll('.detail-related-link').forEach(a => {
-          a.addEventListener('click', (e) => {
-            e.preventDefault();
-            const g = graves.find(x => x.id === parseInt(a.dataset.id, 10));
-            if (g) selectGrave(g);
-            if (g && g.lat != null && g.lng != null) flyToGrave(g);
-          });
-        });
-      } else {
-        relatedEl.innerHTML = '';
-      }
-      const directionsEl = document.getElementById('get-directions-link');
-      if (grave.lat != null && grave.lng != null) {
-        flyToGrave(grave);
-        directionsEl.href = 'https://www.google.com/maps/dir/?api=1&destination=' + grave.lat + ',' + grave.lng;
-        directionsEl.style.display = 'inline-block';
-      } else {
-        directionsEl.style.display = 'none';
-      }
+
+      document.getElementById('detail-name').textContent = fig.name;
+      document.getElementById('detail-dates').textContent = fig.dates || '';
+      document.getElementById('detail-role').textContent = fig.role;
+      document.getElementById('detail-summary').textContent = fig.summary;
+      document.getElementById('detail-facts').innerHTML = fig.facts.map(f => `<li>${escapeHtml(f)}</li>`).join('');
+
+      const dirLink = document.getElementById('detail-directions');
+      dirLink.href = `https://www.google.com/maps/dir/?api=1&destination=${fig.lat},${fig.lng}`;
+
+      const marker = markers.find(m => m.fig.id === fig.id);
+      if (marker) marker.el.classList.add('active');
+
+      const card = document.querySelector(`.figure-card[data-id="${fig.id}"]`);
+      if (card) card.classList.add('active');
+
+      map.flyTo({ center: [fig.lng, fig.lat], zoom: 15, speed: 0.8, curve: 1.2 });
     }
 
-    /** Extract short section label for filter: "Section T4 - Block ..." -> "T4" (letter and number between Section and the -). */
-    function getSectionLabel(locationString) {
-      const s = (locationString || '').trim();
-      if (!s) return null;
-      const match = s.match(/Section\s+([A-Za-z0-9]+)\s*-/);
-      return match ? match[1].trim() : null;
-    }
-
-    function getFilteredGraves() {
-      const nameQuery = document.getElementById('search-name').value.trim().toLowerCase();
-      const gender = document.getElementById('filter-gender').value;
-      const section = document.getElementById('filter-section').value;
-      const funeral = document.getElementById('filter-funeral').value;
-      const graveType = document.getElementById('filter-grave-type').value;
-      const birthYearFrom = document.getElementById('filter-birth-year-from').value ? parseInt(document.getElementById('filter-birth-year-from').value, 10) : null;
-      const birthYearTo = document.getElementById('filter-birth-year-to').value ? parseInt(document.getElementById('filter-birth-year-to').value, 10) : null;
-
-      return graves.filter(g => {
-        if (nameQuery) {
-          const full = (g.fullName || '').toLowerCase();
-          const first = (g.firstName || '').toLowerCase();
-          const last = (g.lastName || '').toLowerCase();
-          if (!full.includes(nameQuery) && !first.includes(nameQuery) && !last.includes(nameQuery)) return false;
-        }
-        if (gender && normalizeGender(g.gender) !== gender) return false;
-        if (section) {
-          const gLabel = getSectionLabel(g.locationString);
-          if (gLabel == null || gLabel.trim() !== section.trim()) return false;
-        }
-        if (funeral && (g.funeralHome || '').trim() !== funeral.trim()) return false;
-        if (graveType && (g.graveType || '').trim() !== graveType.trim()) return false;
-        if (birthYearFrom != null && (g.birthYear == null || g.birthYear < birthYearFrom)) return false;
-        if (birthYearTo != null && (g.birthYear == null || g.birthYear > birthYearTo)) return false;
-        return true;
+    function buildFigureList() {
+      const container = document.getElementById('figure-list');
+      container.innerHTML = '';
+      figures.forEach(fig => {
+        const card = document.createElement('div');
+        card.className = 'figure-card';
+        card.dataset.id = fig.id;
+        card.innerHTML = `<div class="fc-name">${escapeHtml(fig.name)}</div><div class="fc-role">${escapeHtml(fig.role)}</div>`;
+        card.addEventListener('click', () => selectFigure(fig));
+        container.appendChild(card);
       });
     }
 
-    function applyFilters() {
-      listExpanded = false;
-      filteredGraves = getFilteredGraves();
-      updateListPanel();
-      if (map.getSource && map.getSource('graves')) {
-        map.getSource('graves').setData(buildGravesGeojson(filteredGraves));
-      }
-      if (tourActive && tourPathGraves.length > 0) {
-        tourStep = Math.min(tourStep, tourPathGraves.length - 1);
-        updateTourPath();
-      }
-    }
+    function addMarkers() {
+      figures.forEach(fig => {
+        const el = document.createElement('div');
+        el.className = 'figure-marker';
 
-    function filteredGravesWithCoords() {
-      return filteredGraves.filter(g => g.lat != null && g.lng != null);
-    }
+        const marker = new mapboxgl.Marker({ element: el })
+          .setLngLat([fig.lng, fig.lat])
+          .addTo(map);
 
-    function setHoveredGrave(grave) {
-      hoveredGraveId = grave ? grave.id : null;
-      document.querySelectorAll('.list-panel-item[data-grave-id]').forEach(el => {
-        el.classList.toggle('hovered', parseInt(el.dataset.graveId, 10) === hoveredGraveId);
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (popupInstance) popupInstance.remove();
+          popupInstance = new mapboxgl.Popup({ offset: 25, closeButton: true })
+            .setLngLat([fig.lng, fig.lat])
+            .setHTML(
+              `<div class="popup-name">${escapeHtml(fig.name)}</div>` +
+              `<div class="popup-role">${escapeHtml(fig.role)}</div>` +
+              `<div class="popup-summary">${escapeHtml(fig.summary)}</div>`
+            )
+            .addTo(map);
+          selectFigure(fig);
+        });
+
+        el.addEventListener('mouseenter', () => {
+          if (selectedFigure && selectedFigure.id === fig.id) return;
+          if (popupInstance) popupInstance.remove();
+          popupInstance = new mapboxgl.Popup({ offset: 25, closeButton: false, closeOnClick: false })
+            .setLngLat([fig.lng, fig.lat])
+            .setHTML(`<div class="popup-name">${escapeHtml(fig.name)}</div><div class="popup-role">${escapeHtml(fig.role)}</div>`)
+            .addTo(map);
+        });
+
+        el.addEventListener('mouseleave', () => {
+          if (selectedFigure && selectedFigure.id === fig.id) return;
+          if (popupInstance) { popupInstance.remove(); popupInstance = null; }
+        });
+
+        markers.push({ fig, marker, el });
       });
-      if (!map.getSource || !map.getSource('graves-hover')) return;
-      var showHover = grave && grave.lat != null && grave.lng != null && (!selectedGrave || selectedGrave.id !== grave.id);
-      if (showHover) {
-        map.getSource('graves-hover').setData({
-          type: 'FeatureCollection',
-          features: [{ type: 'Feature', geometry: { type: 'Point', coordinates: [grave.lng, grave.lat] }, properties: {} }]
-        });
-        map.setLayoutProperty('graves-hover-layer', 'visibility', 'visible');
-      } else {
-        map.getSource('graves-hover').setData({ type: 'FeatureCollection', features: [] });
-        map.setLayoutProperty('graves-hover-layer', 'visibility', 'none');
-      }
     }
 
-    let listExpanded = false;
-    const LIST_COLLAPSED_COUNT = 5;
-
-    function updateListPanel() {
-      const listEl = document.getElementById('list-panel-list');
-      listEl.innerHTML = '';
-      const total = filteredGraves.length;
-      const showCount = listExpanded ? Math.min(total, 200) : Math.min(total, LIST_COLLAPSED_COUNT);
-      filteredGraves.slice(0, showCount).forEach(g => {
-        const name = (g.fullName || [g.firstName, g.middleName, g.lastName].filter(Boolean).join(' ')).trim();
-        const sub = [g.locationString, g.deathDate ? g.deathDate.slice(0, 4) : ''].filter(Boolean).join(' · ');
-        const div = document.createElement('div');
-        div.className = 'list-panel-item';
-        div.dataset.graveId = g.id;
-        div.innerHTML = `<strong>${escapeHtml(name)}</strong>${sub ? `<span>${escapeHtml(sub)}</span>` : ''}`;
-        div.addEventListener('click', () => {
-          selectGrave(g);
-          if (g.lat != null && g.lng != null) flyToGrave(g);
-        });
-        div.addEventListener('mouseenter', () => {
-          if (g.lat != null && g.lng != null) {
-            map.flyTo({ center: [g.lng, g.lat], zoom: GRAVE_ZOOM_CLOSE, speed: 0.5, curve: 1.2, essential: true });
-            setHoveredGrave(g);
-          }
-        });
-        div.addEventListener('mouseleave', () => { setHoveredGrave(null); });
-        listEl.appendChild(div);
-      });
-      if (!listExpanded && total > LIST_COLLAPSED_COUNT) {
-        const toggle = document.createElement('button');
-        toggle.className = 'more-filters-toggle';
-        toggle.textContent = `Show all ${total.toLocaleString()} burials`;
-        toggle.style.marginTop = '6px';
-        toggle.addEventListener('click', () => { listExpanded = true; updateListPanel(); });
-        listEl.appendChild(toggle);
-      } else if (listExpanded && total > LIST_COLLAPSED_COUNT) {
-        if (total > 200) {
-          const cap = document.createElement('div');
-          cap.className = 'list-panel-item';
-          cap.style.fontStyle = 'italic';
-          cap.textContent = `Showing 200 of ${total.toLocaleString()}. Use filters to narrow.`;
-          listEl.appendChild(cap);
-        }
-        const collapse = document.createElement('button');
-        collapse.className = 'more-filters-toggle';
-        collapse.textContent = 'Show less';
-        collapse.style.marginTop = '6px';
-        collapse.addEventListener('click', () => { listExpanded = false; updateListPanel(); });
-        listEl.appendChild(collapse);
-      }
-    }
-
-    function getTourPathCoords() {
-      const arr = tourPathGraves.length ? tourPathGraves : filteredGravesWithCoords().slice(0, 20);
-      return arr.map(g => [g.lng, g.lat]);
-    }
-
-    function getProgressPathCoords() {
-      if (tourStep <= 0) return [];
-      return getTourPathCoords().slice(0, tourStep + 1);
-    }
-
-    function getTourCalloutText(step) {
-      const arr = tourPathGraves.length ? tourPathGraves : filteredGravesWithCoords().slice(0, 20);
-      if (arr.length === 0) return '';
-      const maxStops = arr.length;
-      if (step === 0) return 'Explorer Mode — interactive walkthrough of the cemetery.';
-      if (step === maxStops - 1) return "Final stop. You've completed the interactive cemetery walkthrough.";
-      const g = arr[step];
-      return (g.fullName || [g.firstName, g.lastName].filter(Boolean).join(' ')).trim();
-    }
-
-    function updateTourPath() {
-      if (!map.getSource || !map.getSource('tour-path-full')) return;
-      const fullCoords = getTourPathCoords();
-      const progressCoords = getProgressPathCoords();
-      map.getSource('tour-path-full').setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: fullCoords } });
-      map.getSource('tour-path-progress').setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: progressCoords } });
-      const total = tourPathGraves.length || filteredGravesWithCoords().length;
-      const maxStops = Math.min(20, total);
-      const current = total > 0 ? Math.min(tourStep + 1, maxStops) : 0;
-      document.getElementById('tour-step').textContent = total > 0 ? `Stop ${current} of ${maxStops} — Explorer Mode` : '0 / 0';
-      const fillEl = document.getElementById('tour-progress-fill');
-      if (fillEl) fillEl.style.width = maxStops > 0 ? (current / maxStops * 100) + '%' : '0%';
-    }
-
-    function showTourCallout(text) {
-      const el = document.getElementById('tour-callout');
-      document.getElementById('tour-callout-text').textContent = text;
-      el.classList.remove('hidden');
-    }
-
-    function hideTourCallout() {
-      document.getElementById('tour-callout').classList.add('hidden');
-    }
-
-    function goToTourStop(step) {
-      const arr = tourPathGraves.length ? tourPathGraves : filteredGravesWithCoords().slice(0, 20);
-      if (arr.length === 0) return;
-      const maxStep = arr.length - 1;
-      tourStep = Math.max(0, Math.min(step, maxStep));
-      const g = arr[tourStep];
-      updateTourPath();
-      selectGrave(g);
-      showTourCallout(getTourCalloutText(tourStep));
-      document.getElementById('tour-prev').disabled = tourStep === 0;
-    }
-
-    function exitTour() {
-      tourActive = false;
-      tourPathGraves = [];
-      document.getElementById('map-actions').style.display = 'flex';
-      document.getElementById('tour-controls').classList.remove('visible');
-      hideTourCallout();
-      map.setLayoutProperty('tour-path-full', 'visibility', 'none');
-      map.setLayoutProperty('tour-path-progress', 'visibility', 'none');
-      if (popupInstance) popupInstance.remove();
+    function resetMap() {
+      if (popupInstance) { popupInstance.remove(); popupInstance = null; }
+      selectFigure(null);
+      map.flyTo({ center: INITIAL_CENTER, zoom: INITIAL_ZOOM, speed: 0.8 });
     }
 
     function startTour() {
-      const withCoords = filteredGravesWithCoords();
-      if (withCoords.length === 0) return;
-      const countVal = document.getElementById('explorer-count').value;
-      const count = countVal === 'all' ? withCoords.length : parseInt(countVal, 10);
-      tourPathGraves = shuffleArray(withCoords).slice(0, count);
+      if (figures.length === 0) return;
       tourActive = true;
       tourStep = 0;
       document.getElementById('map-actions').style.display = 'none';
       document.getElementById('tour-controls').classList.add('visible');
-      map.setLayoutProperty('tour-path-full', 'visibility', 'visible');
-      map.setLayoutProperty('tour-path-progress', 'visibility', 'visible');
       goToTourStop(0);
     }
 
-    const GENDER_OPTIONS = [
-      { value: 'M', label: 'Male' },
-      { value: 'F', label: 'Female' },
-      { value: 'N', label: 'Not Specified' },
-      { value: 'U', label: 'Unknown' }
-    ];
-
-    function normalizeGender(val) {
-      if (!val) return '';
-      const v = String(val).trim().toUpperCase();
-      if (v === 'M' || v === 'MALE') return 'M';
-      if (v === 'F' || v === 'FEMALE') return 'F';
-      if (v === 'N' || v === 'NON-BINARY' || v === 'NONBINARY' || v === 'NOT SPECIFIED') return 'N';
-      if (v === 'U' || v === 'UNKNOWN' || v === 'OTHER') return 'U';
-      return v;
+    function goToTourStop(idx) {
+      if (idx < 0 || idx >= figures.length) return;
+      tourStep = idx;
+      const fig = figures[tourStep];
+      selectFigure(fig);
+      document.getElementById('tour-step').textContent = `${tourStep + 1} / ${figures.length}`;
     }
 
-    function populateFilterOptions() {
-      const sections = [...new Set(graves.map(g => getSectionLabel(g.locationString)).filter(Boolean))].sort().slice(0, 100);
-      const funerals = [...new Set(graves.map(g => (g.funeralHome || '').trim()).filter(Boolean))].sort().slice(0, 80);
-      const graveTypes = [...new Set(graves.map(g => (g.graveType || '').trim()).filter(Boolean))].sort().slice(0, 50);
-      const years = [...new Set(graves.map(g => g.birthYear).filter(Boolean))].filter(y => y >= 1850 && y <= 2030).sort((a, b) => a - b);
-
-      const genderSel = document.getElementById('filter-gender');
-      genderSel.innerHTML = '<option value="">All</option>' + GENDER_OPTIONS.map(o => `<option value="${escapeHtml(o.value)}">${escapeHtml(o.label)}</option>`).join('');
-
-      ['filter-section', 'filter-funeral', 'filter-grave-type'].forEach((id, i) => {
-        const opts = [sections, funerals, graveTypes][i];
-        const sel = document.getElementById(id);
-        sel.innerHTML = '<option value="">All</option>' + opts.map(o => `<option value="${escapeHtml(String(o))}">${escapeHtml(String(o))}</option>`).join('');
-      });
-      const fromSel = document.getElementById('filter-birth-year-from');
-      const toSel = document.getElementById('filter-birth-year-to');
-      fromSel.innerHTML = '<option value="">From</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
-      toSel.innerHTML = '<option value="">To</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
+    function exitTour() {
+      tourActive = false;
+      document.getElementById('map-actions').style.display = 'flex';
+      document.getElementById('tour-controls').classList.remove('visible');
+      resetMap();
     }
 
     map.on('load', () => {
       map.addControl(new mapboxgl.NavigationControl(), 'top-right');
-      map.resize();
-      window.addEventListener('resize', () => map.resize());
 
-      fetch(GRAVES_DATA_URL)
+      fetch(FIGURES_URL)
         .then(r => r.json())
         .then(data => {
-          graves = data;
-          gravesWithCoords = graves.filter(g => g.lat != null && g.lng != null);
-
-          map.addSource('graves', {
-            type: 'geojson',
-            data: buildGravesGeojson(graves),
-            cluster: true,
-            clusterMaxZoom: 16,
-            clusterRadius: 50
-          });
-
-          map.addLayer({
-            id: 'graves-clusters',
-            type: 'circle',
-            source: 'graves',
-            filter: ['has', 'point_count'],
-            paint: {
-              'circle-color': '#5c4a32',
-              'circle-radius': ['step', ['get', 'point_count'], 20, 100, 30, 750, 40],
-              'circle-stroke-width': 2,
-              'circle-stroke-color': '#e8dfd0'
-            }
-          });
-
-          map.addLayer({
-            id: 'graves-cluster-count',
-            type: 'symbol',
-            source: 'graves',
-            filter: ['has', 'point_count'],
-            layout: {
-              'text-field': ['get', 'point_count_abbreviated'],
-              'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
-              'text-size': 12
-            },
-            paint: { 'text-color': '#f5f0e8' }
-          });
-
-          map.addLayer({
-            id: 'graves-unclustered',
-            type: 'circle',
-            source: 'graves',
-            filter: ['!', ['has', 'point_count']],
-            paint: {
-              'circle-color': ['case', ['>', ['get', 'count'], 1], '#b76e79', '#5c4a32'],
-              'circle-radius': ['step', ['get', 'count'], 6, 2, 8, 5, 12, 10, 15, 20, 20],
-              'circle-stroke-width': 2,
-              'circle-stroke-color': '#e8dfd0'
-            }
-          });
-
-          map.addLayer({
-            id: 'graves-unclustered-count',
-            type: 'symbol',
-            source: 'graves',
-            filter: ['all', ['!', ['has', 'point_count']], ['>=', ['get', 'count'], 10]],
-            layout: {
-              'text-field': ['to-string', ['get', 'count']],
-              'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
-              'text-size': 11
-            },
-            paint: { 'text-color': '#ffffff' }
-          });
-
-          map.addSource('graves-hover', {
-            type: 'geojson',
-            data: { type: 'FeatureCollection', features: [] }
-          });
-          map.addLayer({
-            id: 'graves-hover-layer',
-            type: 'circle',
-            source: 'graves-hover',
-            paint: {
-              'circle-color': '#C19A6B',
-              'circle-radius': 14,
-              'circle-stroke-width': 2,
-              'circle-stroke-color': '#ffffff'
-            }
-          });
-
-          map.addSource('selected-grave', {
-            type: 'geojson',
-            data: { type: 'FeatureCollection', features: [] }
-          });
-          map.addLayer({
-            id: 'selected-grave-halo',
-            type: 'circle',
-            source: 'selected-grave',
-            paint: {
-              'circle-color': '#ffffff',
-              'circle-radius': 28,
-              'circle-opacity': 0.4,
-              'circle-blur': 0.6
-            }
-          });
-          map.addLayer({
-            id: 'selected-grave-marker',
-            type: 'circle',
-            source: 'selected-grave',
-            paint: {
-              'circle-color': '#C19A6B',
-              'circle-radius': 20,
-              'circle-stroke-width': 4,
-              'circle-stroke-color': '#ffffff'
-            }
-          });
-
-          map.on('click', 'graves-clusters', (e) => {
-            const features = map.queryRenderedFeatures(e.point, { layers: ['graves-clusters'] });
-            if (!features.length) return;
-            const clusterId = features[0].properties.cluster_id;
-            map.getSource('graves').getClusterExpansionZoom(clusterId, (err, zoom) => {
-              if (err) return;
-              map.easeTo({ center: features[0].geometry.coordinates, zoom: zoom });
-            });
-          });
-
-          map.on('click', 'graves-unclustered', (e) => {
-            const features = map.queryRenderedFeatures(e.point, { layers: ['graves-unclustered'] });
-            if (!features.length) return;
-            const props = features[0].properties;
-            let ids = [];
-            try { ids = props.ids ? JSON.parse(props.ids) : (props.id != null ? [props.id] : []); } catch (_) {}
-            const gravesAtLocation = ids.map(id => graves.find(x => x.id === id)).filter(Boolean);
-            if (gravesAtLocation.length === 0) return;
-            if (gravesAtLocation.length === 1) {
-              selectGrave(gravesAtLocation[0]);
-              return;
-            }
-            if (popupInstance) popupInstance.remove();
-            const [lng, lat] = features[0].geometry.coordinates;
-            popupInstance = new mapboxgl.Popup({ offset: 25, closeButton: true })
-              .setLngLat([lng, lat])
-              .setHTML(createPopupHTMLForMultiple(gravesAtLocation))
-              .addTo(map);
-            map.flyTo({ center: [lng, lat], zoom: GRAVE_ZOOM_CLOSE, speed: 0.5, curve: 1.2, essential: true });
-          });
-          document.getElementById('map').addEventListener('click', (e) => {
-            const link = e.target.closest('.popup-related-link');
-            if (!link || !link.closest('.mapboxgl-popup')) return;
-            e.preventDefault();
-            e.stopPropagation();
-            const id = parseInt(link.dataset.id, 10);
-            const g = graves.find(x => x.id === id);
-            if (g) {
-              if (popupInstance) { popupInstance.remove(); popupInstance = null; }
-              selectGrave(g);
-            }
-          });
-
-          map.on('mouseenter', 'graves-unclustered', (e) => {
-            map.getCanvas().style.cursor = 'pointer';
-            const features = map.queryRenderedFeatures(e.point, { layers: ['graves-unclustered'] });
-            if (features.length) {
-              const props = features[0].properties;
-              let ids = [];
-              try { ids = props.ids ? JSON.parse(props.ids) : (props.id != null ? [props.id] : []); } catch (_) {}
-              const g = ids.length ? graves.find(x => x.id === ids[0]) : null;
-              if (g) setHoveredGrave(g);
-            }
-          });
-          map.on('mouseleave', 'graves-unclustered', () => {
-            map.getCanvas().style.cursor = '';
-            setHoveredGrave(null);
-          });
-          map.on('mouseenter', 'graves-clusters', () => { map.getCanvas().style.cursor = 'pointer'; });
-          map.on('mouseleave', 'graves-clusters', () => { map.getCanvas().style.cursor = ''; });
-
-          map.on('click', (e) => {
-            const hit = map.queryRenderedFeatures(e.point, { layers: ['graves-unclustered', 'graves-clusters'] });
-            if (hit.length === 0) {
-              selectGrave(null);
-              if (popupInstance) { popupInstance.remove(); popupInstance = null; }
-            }
-          });
-
-          filteredGraves = graves;
-          populateFilterOptions();
-          applyFilters();
-          updateListPanel();
+          figures = data;
+          buildFigureList();
+          addMarkers();
         })
-        .catch(err => {
-          console.error('Failed to load graves.json', err);
-          document.body.insertAdjacentHTML('afterbegin', '<div style="position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#c00;color:#fff;padding:12px 24px;border-radius:8px;z-index:9999;">Failed to load data/graves.json. Run convert.py and serve from localhost.</div>');
-        });
+        .catch(err => console.error('Failed to load notable-figures.json', err));
 
-      map.addSource('tour-path-full', {
-        type: 'geojson',
-        data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [INITIAL_VIEW.center] } }
-      });
-      map.addSource('tour-path-progress', {
-        type: 'geojson',
-        data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [] } }
-      });
-      map.addLayer({
-        id: 'tour-path-full',
-        type: 'line',
-        source: 'tour-path-full',
-        layout: { 'line-join': 'round', 'line-cap': 'round', visibility: 'none' },
-        paint: { 'line-color': '#94a3b8', 'line-width': 4, 'line-dasharray': [2, 2], 'line-opacity': 0.7 }
-      });
-      map.addLayer({
-        id: 'tour-path-progress',
-        type: 'line',
-        source: 'tour-path-progress',
-        layout: { 'line-join': 'round', 'line-cap': 'round', visibility: 'none' },
-        paint: { 'line-color': '#722f37', 'line-width': 5 }
+      document.getElementById('detail-back').addEventListener('click', () => {
+        selectFigure(null);
+        if (!tourActive) map.flyTo({ center: INITIAL_CENTER, zoom: INITIAL_ZOOM, speed: 0.6 });
       });
 
-      document.getElementById('search-name').addEventListener('input', applyFilters);
-      document.getElementById('filter-gender').addEventListener('change', applyFilters);
-      document.getElementById('filter-section').addEventListener('change', applyFilters);
-      document.getElementById('filter-funeral').addEventListener('change', applyFilters);
-      document.getElementById('filter-grave-type').addEventListener('change', applyFilters);
-
-      function doClearFilters() {
-        document.getElementById('search-name').value = '';
-        document.getElementById('filter-gender').value = '';
-        document.getElementById('filter-section').value = '';
-        document.getElementById('filter-funeral').value = '';
-        document.getElementById('filter-grave-type').value = '';
-        document.getElementById('filter-birth-year-from').value = '';
-        document.getElementById('filter-birth-year-to').value = '';
-        selectGrave(null);
-        applyFilters();
-      }
-      document.getElementById('clear-filters').addEventListener('click', doClearFilters);
-      document.getElementById('clear-filters-inside').addEventListener('click', () => {
-        doClearFilters();
-        document.getElementById('more-filters').classList.remove('open');
-        document.getElementById('filter-links-row-top').style.display = 'flex';
-      });
-
-      document.getElementById('filter-birth-year-from').addEventListener('change', applyFilters);
-      document.getElementById('filter-birth-year-to').addEventListener('change', applyFilters);
-
-      function toggleMoreFilters() {
-        const moreFiltersEl = document.getElementById('more-filters');
-        const topRowEl = document.getElementById('filter-links-row-top');
-        moreFiltersEl.classList.toggle('open');
-        const isOpen = moreFiltersEl.classList.contains('open');
-        topRowEl.style.display = isOpen ? 'none' : 'flex';
-      }
-      document.getElementById('more-filters-toggle').addEventListener('click', toggleMoreFilters);
-      document.getElementById('less-filters-toggle').addEventListener('click', toggleMoreFilters);
-
-      document.getElementById('back-to-list').addEventListener('click', () => { selectGrave(null); });
-
-      document.getElementById('reset-map').addEventListener('click', resetMapView);
-
+      document.getElementById('reset-map').addEventListener('click', resetMap);
       document.getElementById('start-tour').addEventListener('click', startTour);
       document.getElementById('tour-next').addEventListener('click', () => {
-        const arr = tourPathGraves.length ? tourPathGraves : filteredGravesWithCoords().slice(0, 20);
-        if (arr.length === 0) return;
-        const next = (tourStep + 1) % arr.length;
-        goToTourStop(next);
+        if (tourStep < figures.length - 1) goToTourStop(tourStep + 1);
       });
-      document.getElementById('tour-prev').addEventListener('click', () => goToTourStop(tourStep - 1));
+      document.getElementById('tour-prev').addEventListener('click', () => {
+        if (tourStep > 0) goToTourStop(tourStep - 1);
+      });
       document.getElementById('tour-exit').addEventListener('click', exitTour);
-
-      document.getElementById('map-info-toggle').addEventListener('click', () => {
-        document.getElementById('map-info-card').classList.toggle('open');
-      });
-      document.getElementById('map-info-close').addEventListener('click', () => {
-        document.getElementById('map-info-card').classList.remove('open');
-      });
-
-      fetch('data/notable-figures.json')
-        .then(r => r.json())
-        .then(figures => {
-          const container = document.getElementById('notable-figures-list');
-          const INITIAL_SHOW = 5;
-          figures.forEach((fig, idx) => {
-            const item = document.createElement('div');
-            item.className = 'hist-item';
-            if (idx >= INITIAL_SHOW) item.style.display = 'none';
-            item.dataset.figIdx = idx;
-            item.innerHTML =
-              `<strong>${escapeHtml(fig.name)}${fig.dates ? ' (' + escapeHtml(fig.dates) + ')' : ''}</strong>` +
-              `<span class="hist-role">${escapeHtml(fig.role)}</span>` +
-              `<span class="hist-summary">${escapeHtml(fig.summary)}</span>` +
-              `<div class="hist-facts"><ul>${fig.facts.map(f => '<li>' + escapeHtml(f) + '</li>').join('')}</ul></div>`;
-            item.addEventListener('click', () => {
-              item.querySelector('.hist-facts').classList.toggle('open');
-            });
-            container.appendChild(item);
-          });
-          if (figures.length > INITIAL_SHOW) {
-            const toggle = document.createElement('button');
-            toggle.className = 'more-filters-toggle';
-            toggle.style.marginTop = '6px';
-            toggle.textContent = `Show all ${figures.length} figures`;
-            let expanded = false;
-            toggle.addEventListener('click', () => {
-              expanded = !expanded;
-              container.querySelectorAll('.hist-item').forEach((el, i) => {
-                el.style.display = (expanded || i < INITIAL_SHOW) ? '' : 'none';
-              });
-              toggle.textContent = expanded ? 'Show less' : `Show all ${figures.length} figures`;
-            });
-            container.appendChild(toggle);
-          }
-        })
-        .catch(() => {});
-
     });
   </script>
 </body>
