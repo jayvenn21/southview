@@ -1,14 +1,14 @@
 # Mapbox / API keys (copy config.example.js to config.js)
 config.js
 
-# Source data (burial records – do not commit)
+# Source data (burial records – do not commit full exports)
 *.csv
+!buried-data.csv
 southview-daily-interment-all-time*.csv
 
-# Generated / derived data (contains PII: names, dates, locations)
+# Full-dump generated JSON at repo root (if any)
 graves.json
-data/graves.json
-data/coordinates.json
+# data/graves.json + data/coordinates.json: committed for the 20-row buried-data subset; regenerate with python python/buried_subset.py
 data/updates/*.csv
 data/updates/*.json
 

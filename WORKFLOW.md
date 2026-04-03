@@ -2,13 +2,13 @@
 
 Controlled submission pipeline: no public editing, no auth in scope. Proof that staff can add/update graves via a simple, professional flow.
 
-**Form link (staff):** https://forms.gle/oExirtBkM2D2BWVD7
+The public app does not link to a submission form; staff use a Google Form and Sheet outside the UI as needed.
 
 ---
 
 ## A. Link the Form to a Google Sheet
 
-1. Open the [Google Form](https://forms.gle/oExirtBkM2D2BWVD7).
+1. Open your burial-updates **Google Form** (create one if needed).
 2. Go to **Responses** → click the green **Link to Sheets** icon.
 3. Choose **Create a new spreadsheet** and name it: **southview-burial-updates**.
 4. Every new submission will appear as a new row in that sheet.
@@ -61,13 +61,13 @@ Run when you want a fresh export; then download the file and place it in `data/u
 
 ---
 
-## C. Merge updates into graves: `convert.py`
+## C. Merge updates into graves: `python/convert.py`
 
-1. **Main data:** The full cemetery export stays as **`southview-daily-interment-all-time (1).csv`** in the project root (or set `INPUT_FILE` in `convert.py`).
+1. **Main data:** By default **`python/convert.py`** uses **`buried-data.csv`** in the project root (20-row curated subset). To use a new full cemetery export, place it in the project root and set **`INPUT_FILE`** in `python/convert.py` to that filename.
 2. **Updates:** Place the Form export at **`data/updates/southview-burial-updates.csv`**.
 3. **Run:**
    ```bash
-   python3 convert.py
+   python3 python/convert.py
    ```
 4. **Merge behavior:**
    - Row with **Deceased ID** matching an existing grave → **update** that record.
@@ -85,7 +85,7 @@ Google Sheet (southview-burial-updates)
    ↓  File → Download → CSV
 data/updates/southview-burial-updates.csv
    ↓
-python3 convert.py
+python3 python/convert.py
    ↓
 data/graves.json
    ↓
@@ -93,17 +93,11 @@ App loads updated records (refresh page)
 ```
 
 - **No login or Firebase** — form + domain restriction is the gate.
-- **When to run convert.py:** Whenever new submissions are in the sheet. Download CSV → replace `data/updates/southview-burial-updates.csv` → run `convert.py` → refresh the app.
+- **When to run convert:** Whenever new submissions are in the sheet. Download CSV → replace `data/updates/southview-burial-updates.csv` → run `python3 python/convert.py` → refresh the app.
 
 ---
 
-## E. Staff entry point in the app
-
-Top-right of the map: **"I am staff"** link. Click it to reveal **"Submit burial update"**, which opens the Google Form in a new tab. Keeps the UI clean for the public while giving staff a clear path.
-
----
-
-## E2. Historical categories (your interpretive layer)
+## E. Historical categories (your interpretive layer)
 
 **The Google Form does not collect categories.** Categories are your curation for storytelling and guided tours, not part of cemetery data entry.
 

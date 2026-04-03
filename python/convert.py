@@ -2,19 +2,24 @@
 South View Cemetery — CSV → JSON data pipeline.
 Loads the interment CSV, strips HTML, normalizes columns, computes age when missing,
 outputs data/graves.json and optional data/coordinates.json for fast map loading.
-"""
-import os
-import pandas as pd
-import json
-import re
-from datetime import datetime
 
-INPUT_FILE = "southview-daily-interment-all-time (1).csv"
-UPDATES_DIR = os.path.join("data", "updates")
+Run from repo root: python python/convert.py
+"""
+import json
+import os
+import re
+from pathlib import Path
+
+import pandas as pd
+
+ROOT = Path(__file__).resolve().parent.parent
+# Subset of 20 distinctly located records; regenerate via python python/buried_subset.py or set to a full export filename under ROOT.
+INPUT_FILE = ROOT / "buried-data.csv"
+UPDATES_DIR = ROOT / "data" / "updates"
 UPDATES_FILE = "southview-burial-updates.csv"  # Google Form → Sheet → Download CSV → put in data/updates/
-DATA_DIR = "data"
-OUTPUT_GRAVES = os.path.join(DATA_DIR, "graves.json")
-OUTPUT_COORDINATES = os.path.join(DATA_DIR, "coordinates.json")
+DATA_DIR = ROOT / "data"
+OUTPUT_GRAVES = DATA_DIR / "graves.json"
+OUTPUT_COORDINATES = DATA_DIR / "coordinates.json"
 
 # Map Google Form column names (Sheet export) → our JSON keys
 FORM_TO_SCHEMA = {
@@ -218,8 +223,8 @@ def main():
                 rec[k] = v
         records.append(rec)
 
-    updates_path = os.path.join(UPDATES_DIR, UPDATES_FILE) if UPDATES_FILE else None
-    if updates_path and os.path.isfile(updates_path):
+    updates_path = UPDATES_DIR / UPDATES_FILE if UPDATES_FILE else None
+    if updates_path and updates_path.is_file():
         try:
             form_rows = load_form_updates(updates_path)
             if form_rows:

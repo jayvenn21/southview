@@ -1,6 +1,6 @@
 # South View — Historic Cemetery Navigation & History
 
-Interactive map and list for South View Cemetery (Atlanta, GA). Data-driven from `data/graves.json`: map markers (with clustering), list view, filters, detail popups with dates and related burials, and guided tour.
+Interactive map and list for South View Cemetery (Atlanta, GA). The app loads **`data/graves.json`**, generated from **`buried-data.csv`** (20 real records with distinct coordinates from the cemetery export). Regenerate both JSON files with **`python python/buried_subset.py`** from the project root (stdlib only). For a larger merge workflow with pandas, set **`INPUT_FILE`** in **`python/convert.py`** to `buried-data.csv` (default) or to the full daily CSV under the repo root.
 
 ## Setup
 
@@ -9,13 +9,8 @@ Interactive map and list for South View Cemetery (Atlanta, GA). Data-driven from
    - Copy `config.example.js` to `config.js` and set your token in `config.js`.
 
 2. **Data**  
-   - Place the South View interment CSV in the project root (or set `INPUT_FILE` in `convert.py`).  
-   - Run:
-     ```bash
-     pip install -r requirements.txt
-     python3 convert.py
-     ```
-   - This writes `data/graves.json` (and `data/coordinates.json`).
+   - **Curated subset (default):** run `python3 python/buried_subset.py` — writes `data/graves.json` and `data/coordinates.json` from `buried-data.csv` (20 records; no pandas). If a full export CSV named `southview-daily-interment-all-time (1).csv` exists in the repo root, it also rebuilds `buried-data.csv` first.  
+   - **Full CSV + pandas:** install deps (`pip install -r python/requirements.txt`), set `INPUT_FILE` in `python/convert.py` if needed, then `python3 python/convert.py`.
 
 3. **Run locally**  
    - Serve over HTTP (Mapbox needs it; `file://` will not load tiles):
@@ -25,10 +20,9 @@ Interactive map and list for South View Cemetery (Atlanta, GA). Data-driven from
      ```
    - Open **http://localhost:3000**.
 
-   - **If you see "Failed to load data/graves.json":**  
-     - Regenerate: `python3 convert.py` (from project root).  
-     - Ensure you opened **http://localhost:3000** in the browser, not the HTML file via `file://`.  
-     - Ensure the server was started from the project root (the folder that contains `data/` and `index.html`).
+   - **If you see a failed-to-load dataset error:**  
+     - Run **`python python/buried_subset.py`** to create `buried-data.csv`, `data/graves.json`, and `data/coordinates.json`.  
+     - Open **http://localhost:3000** (not `file://`) and serve from the project root.
 
 ## Features
 
@@ -41,7 +35,7 @@ Interactive map and list for South View Cemetery (Atlanta, GA). Data-driven from
 
 ## Data workflow
 
-See **WORKFLOW.md** for the recommended path: Google Forms → Google Sheets → CSV export → `convert.py` → `data/graves.json`. No auth in this phase.
+See **WORKFLOW.md** for the recommended path: Google Forms → Google Sheets → CSV export → `python/convert.py` → `data/graves.json`. No auth in this phase.
 
 ## Usability testing
 
@@ -49,5 +43,6 @@ See **USABILITY_TESTING.md** for tasks and notes to use with 2 testers.
 
 ## Tech
 
-- Single HTML file + Mapbox GL JS; no build step.
-- Data: `data/graves.json` produced by `convert.py` from the South View CSV.
+- `index.html`, `css/app.css`, `assets/`, and ES modules in `js/`; Mapbox GL JS from CDN; no build step.
+- Backend / data pipeline: `python/` (`buried_subset.py`, `convert.py`, `reorder_buried_path.py`, `requirements.txt`).
+- Data: `data/graves.json` from `buried-data.csv` via `python/buried_subset.py`, or from `python/convert.py` for larger exports.
